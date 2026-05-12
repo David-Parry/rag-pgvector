@@ -1,0 +1,21 @@
+apiVersion: v2
+name: rag-pgvector
+description: |
+  Umbrella chart that deploys the rag-pgvector RAG stack:
+    - postgres + pgvector (custom postgres:17 + apt-installed postgresql-17-pgvector)
+    - vectorizer pod (PDF ingestion -> Bedrock Titan v2 embeddings -> pgvector)
+    - question-api pod (grounded RAG over pgvector with Anthropic / host-Ollama LLM)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+keywords:
+  - rag
+  - pgvector
+  - bedrock
+  - langchain
+home: https://github.com/davidparry/rag-pgvector
+sources:
+  - https://github.com/davidparry/rag-pgvector
+maintainers:
+  - name: davidparry

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rag.fullname" . }}-postgres-init
+  labels:
+    {{- include "rag.componentLabels" (merge (dict "component" "postgres") (deepCopy .)) | nindent 4 }}
+data:
+  00-init.sql: |
+    CREATE EXTENSION IF NOT EXISTS vector;

@@ -1,0 +1,73 @@
+{{- if .Values.qa.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rag.fullname" . }}-question-api
+  labels:
+    {{- include "rag.componentLabels" (merge (dict "component" "question-api") (deepCopy .)) | nindent 4 }}
+spec:
+  replicas: {{ .Values.qa.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "rag.componentSelector" (dict "root" . "component" "question-api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "rag.componentSelector" (dict "root" . "component" "question-api") | nindent 8 }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "rag.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.qa.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: question-api
+          image: {{ include "rag.image" (dict "root" . "component" .Values.qa) | quote }}
+          imagePullPolicy: {{ include "rag.imagePullPolicy" (dict "root" . "component" .Values.qa) }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "rag.fullname" . }}-app
+          env:
+            - name: LLM_PROVIDER
+              value: {{ .Values.qa.llmProvider | quote }}
+            - name: OLLAMA_BASE_URL
+              value: {{ .Values.qa.ollamaBaseUrl | quote }}
+            - name: OLLAMA_MODEL
+              value: {{ .Values.qa.ollamaModel | quote }}
+            - name: RETRIEVAL_TOP_K
+              value: {{ .Values.qa.topK | quote }}
+            - name: RETRIEVAL_SCORE_THRESHOLD
+              value: {{ .Values.qa.scoreThreshold | quote }}
+            {{- range $k, $v := .Values.qa.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.qa.resources | nindent 12 }}
+{{- end }}

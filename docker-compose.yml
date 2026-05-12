@@ -1,0 +1,32 @@
+# Convenience compose file for local non-pod development.
+# Brings up the postgres-pgvector image so you can run vectorizer / question-api
+# directly on the host with `uv run`.
+#
+#   docker compose up -d postgres
+#   uv run uvicorn vectorizer.main:app --reload --port 8001
+#   uv run uvicorn question_api.main:app --reload --port 8002
+
+services:
+  postgres:
+    build:
+      context: ./infra/docker/postgres-pgvector
+    image: rag-pgvector/postgres:17
+    container_name: rag-pgvector-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+      POSTGRES_DB: rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - rag_pg_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres-pgvector/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rag_pg_data: {}

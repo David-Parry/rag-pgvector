@@ -1,0 +1,17 @@
+{{- if .Values.qa.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: question-api
+  labels:
+    {{- include "rag.componentLabels" (merge (dict "component" "question-api") (deepCopy .)) | nindent 4 }}
+spec:
+  type: {{ .Values.qa.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.qa.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "rag.componentSelector" (dict "root" . "component" "question-api") | nindent 4 }}
+{{- end }}

@@ -1,0 +1,143 @@
+## ----------------------------------------------------------------------------
+## rag-pgvector chart values
+##
+## The chart deploys 3 pods total: postgres-pgvector, vectorizer, question-api.
+## NO Ollama pod is deployed — Ollama is expected to run on the Docker Desktop
+## host and is reached at http://host.docker.internal:11434 from question-api.
+## ----------------------------------------------------------------------------
+
+nameOverride: ""
+fullnameOverride: ""
+
+## Common image registry/tag defaults. Per-component overrides below.
+image:
+  registry: ""        # e.g. "ghcr.io/davidparry/" — leave blank for local Docker Desktop builds
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+imagePullSecrets: []
+
+## ----------------------------------------------------------------------------
+## AWS Bedrock authentication.
+##
+## auth.mode controls how the pods authenticate to Bedrock:
+##   - "bearer"    (default): Secret holds AWS_BEARER_TOKEN_BEDROCK
+##   - "accessKey":           Secret holds AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+##   - "irsa":                no Secret keys; the ServiceAccount is annotated
+##                            with eks.amazonaws.com/role-arn (for real EKS).
+## ----------------------------------------------------------------------------
+aws:
+  auth:
+    mode: bearer
+    bearerToken: ""           # required when mode=bearer
+    accessKeyId: ""           # required when mode=accessKey
+    secretAccessKey: ""       # required when mode=accessKey
+    irsaRoleArn: ""           # required when mode=irsa
+
+bedrock:
+  region: us-east-1
+  embeddingModelId: amazon.titan-embed-text-v2:0
+  embeddingDimensions: 1024
+
+## ----------------------------------------------------------------------------
+## govinfo (https://api.govinfo.gov)
+## ----------------------------------------------------------------------------
+govinfo:
+  apiKey: ""
+  baseUrl: https://api.govinfo.gov
+
+## ----------------------------------------------------------------------------
+## Anthropic (default LLM provider)
+## ----------------------------------------------------------------------------
+anthropic:
+  apiKey: ""
+  model: claude-sonnet-4-5
+
+## ----------------------------------------------------------------------------
+## Postgres + pgvector pod
+## ----------------------------------------------------------------------------
+postgres:
+  image:
+    repository: rag-pgvector/postgres
+    tag: "17"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  auth:
+    user: rag
+    password: rag
+    database: rag
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""          # blank = cluster default
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+## ----------------------------------------------------------------------------
+## vectorizer pod (PDF -> chunks -> embeddings -> pgvector)
+## ----------------------------------------------------------------------------
+vectorizer:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: rag-pgvector/vectorizer
+    tag: ""                    # falls back to image.tag
+    pullPolicy: ""             # falls back to image.pullPolicy
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1500m
+      memory: 2Gi
+  env:
+    LOG_LEVEL: DEBUG
+    LOG_FORMAT: json
+
+## ----------------------------------------------------------------------------
+## question-api pod (grounded RAG)
+## ----------------------------------------------------------------------------
+qa:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: rag-pgvector/question-api
+    tag: ""
+    pullPolicy: ""
+  service:
+    type: ClusterIP
+    port: 8000
+
+  ## anthropic | ollama
+  llmProvider: anthropic
+
+  ## Ollama (host-resident; no in-cluster pod is deployed).
+  ollamaBaseUrl: http://host.docker.internal:11434
+  ollamaModel: llama3.1:8b
+
+  ## Optional hostAliases for clusters where host.docker.internal does NOT resolve
+  ## from inside pods. Each item is { ip: "...", hostnames: ["..."] }.
+  hostAliases: []
+
+  topK: 5
+  scoreThreshold: 0.25
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1500m
+      memory: 2Gi
+  env:
+    LOG_LEVEL: DEBUG
+    LOG_FORMAT: json
