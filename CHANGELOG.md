@@ -9,15 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- AWS Bedrock Secrets Manager and STS-assumed-role configuration for approved Anthropic Claude model access.
+- `evals/` workspace member with a DeepEval retriever benchmark for sweeping pgvector `top_k` and cosine-distance thresholds against `BILLS-115hr1625enr` goldens.
 
-- Direct Anthropic Claude provider support for `question-api`, selected with `LLM_PROVIDER=anthropic` and configured by `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_FILE`.
+- `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
+
+- Direct Anthropic Claude provider support for `question-api`, configured by `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_FILE`.
 
 - Docker build support for corporate PyPI mirrors: `vectorizer` and `question-api` builder stages accept optional BuildKit secrets (`uv_default_index`, `netrc`, `ssl_cert_bundle`), optional `UV_DEFAULT_INDEX` build-arg, and `scripts/docker-desktop-up.sh` / `scripts/ps/Docker-Desktop-Up.ps1` pass-through via `RAG_*` environment variables; documented in `documentation/DOCKER_PYPI_MIRROR.md`.
 
 - PowerShell equivalents for repository helper scripts under `scripts/ps/`, including shared `_Common.ps1` (repo root, `.env` parsing, port-forward hygiene) and dispatcher `Rag.ps1` for common commands.
 
 ### Fixed
+
+- `rag-core`: parse DeepEval grid settings from comma-separated environment values before pydantic-settings attempts JSON decoding; pytest now configures repo source and test-helper paths without requiring a manual `PYTHONPATH`.
+
+- Tests: isolate the Anthropic missing-key unit test from real shell credentials and run eval integration tests with a psycopg-compatible selector event loop on Windows.
+
+- Tests: exclude integration-marked tests from the default pytest run so external Bedrock, Anthropic, and pgvector checks remain opt-in via `pytest -m integration`.
 
 - `scripts/ps/Ingest-Package.ps1`: build request JSON with native PowerShell parsing instead of `jq --argjson`, preventing Windows PowerShell from stripping metadata JSON quotes before invoking `jq`.
 
@@ -29,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - PowerShell helpers: `kubectl get namespace …` probes no longer terminate when the namespace is missing — stderr from kubectl was treated as a terminating error under `$ErrorActionPreference = Stop` (notably PowerShell 7). Added `Invoke-RagKubectlProbe` for silent exit-code-only checks; used by `Docker-Desktop-Up.ps1` and `Helm-Install.ps1`.
 
-- `scripts/ps/Helm-Install.ps1`: pass the current Bedrock Runtime Helm values (`BEDROCK_CONNECTION_SECRET_NAME`, `BEDROCK_ROLE_ARN`, `EMBEDDING_MODEL`, and `ANTHROPIC_MODEL`) instead of the removed direct Anthropic chart values, avoid printing secret-bearing `--set-string` arguments to terminal logs, and stop after Helm failures instead of printing a success message.
+- `scripts/ps/Helm-Install.ps1`: avoid printing secret-bearing `--set-string` arguments to terminal logs, and stop after Helm failures instead of printing a success message.
 
 - `scripts/ps/Docker-Desktop-Up.ps1`: import locally built images into Docker Desktop Kubernetes' `containerd` image namespace when the cluster uses a containerd runtime, preventing local images from being pulled from Docker Hub.
 
@@ -47,15 +55,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Changed the question API default LLM provider from direct Anthropic API access to AWS Bedrock Runtime.
+- `evals`: expanded and grounded the `BILLS-115hr1625enr` benchmark goldens in the official govinfo PDF text, with 50 questions covering sections 7036-7041, UNRWA provisions, and sections 1002-1007.
 
-- Restored embeddings to the previous direct Bedrock credential path because Amazon Titan is not enabled in the ACA account.
+- Simplified `question-api` LLM composition to direct Anthropic Claude only and removed the Bedrock Claude fallback wiring.
 
-- Updated Helm and environment examples to use `BEDROCK_CONNECTION_SECRET_NAME`, `BEDROCK_ROLE_ARN`, `EMBEDDING_MODEL`, and `ANTHROPIC_MODEL`.
+- Restored embeddings to the previous direct Bedrock credential path because Anthropic does not provide embeddings.
 
-- Added local AWS profile/session support for Docker Desktop Helm installs by exporting temporary AWS credentials, including `AWS_SESSION_TOKEN`, for the Secrets Manager and STS Claude Bedrock path while keeping the embedding bearer token separate.
+- Updated Helm and environment examples to use direct Anthropic settings for answer generation while keeping embedding settings separate.
 
-- Changed the default question API LLM provider to direct Anthropic while keeping Bedrock selectable as a backup with `LLM_PROVIDER=bedrock`.
+- Added local AWS profile/session support for Docker Desktop Helm installs by exporting temporary AWS credentials, including `AWS_SESSION_TOKEN`, for embedding access while keeping the embedding bearer token separate.
+
+### Removed
+
+- Removed Bedrock Claude Secrets Manager and STS-assumed-role runtime support, Helm values, scripts documentation, and tests.
 
 - `rag-core`: constrain `chonkie` to `>=1.6,<1.6.5` so dependency resolution avoids `chonkie` 1.6.5's `tokie` dependency (new wheels can be absent from corporate PyPI mirrors). `uv.lock` updated accordingly.
 

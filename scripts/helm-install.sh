@@ -32,11 +32,7 @@ fi
 
 AWS_AUTH_MODE_RESOLVED="${AWS_AUTH_MODE:-}"
 if [[ -z "$AWS_AUTH_MODE_RESOLVED" ]]; then
-  if [[ -n "${BEDROCK_CONNECTION_SECRET_NAME:-}" ]]; then
-    AWS_AUTH_MODE_RESOLVED="accessKey"
-  else
-    AWS_AUTH_MODE_RESOLVED="bearer"
-  fi
+  AWS_AUTH_MODE_RESOLVED="bearer"
 fi
 
 if [[ "$AWS_AUTH_MODE_RESOLVED" == "accessKey" && ( -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ) ]]; then
@@ -50,15 +46,6 @@ if [[ "$AWS_AUTH_MODE_RESOLVED" == "accessKey" && ( -z "${AWS_ACCESS_KEY_ID:-}" 
   fi
   eval "$(aws configure export-credentials --format env-no-export "${PROFILE_ARGS[@]}")"
   export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
-fi
-
-LLM_PROVIDER_RESOLVED="${LLM_PROVIDER:-}"
-if [[ -z "$LLM_PROVIDER_RESOLVED" ]]; then
-  if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-    LLM_PROVIDER_RESOLVED="anthropic"
-  else
-    LLM_PROVIDER_RESOLVED="bedrock"
-  fi
 fi
 
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || \
@@ -77,19 +64,13 @@ ARGS=(
   --set-string "aws.auth.secretAccessKey=${AWS_SECRET_ACCESS_KEY:-}"
   --set-string "aws.auth.sessionToken=${AWS_SESSION_TOKEN:-}"
   --set "bedrock.region=${AWS_REGION:-us-east-1}"
-  --set-string "bedrock.connectionSecretName=${BEDROCK_CONNECTION_SECRET_NAME:-}"
-  --set-string "bedrock.roleArn=${BEDROCK_ROLE_ARN:-}"
   --set-string "bedrock.embeddingModelId=${EMBEDDING_MODEL:-${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}}"
   --set-string "bedrock.embeddingBearerToken=${AWS_BEARER_TOKEN_BEDROCK:-}"
-  --set-string "bedrock.anthropicModelId=${ANTHROPIC_MODEL:-anthropic.claude-3-5-sonnet-20241022-v2:0}"
   --set "bedrock.embeddingDimensions=${BEDROCK_EMBEDDING_DIMENSIONS:-1024}"
   --set-string "anthropic.apiKey=${ANTHROPIC_API_KEY:-}"
   --set-string "anthropic.model=${ANTHROPIC_DIRECT_MODEL:-claude-sonnet-4-5}"
   --set-string "govinfo.apiKey=${GOVINFO_API_KEY:-}"
   --set-string "govinfo.baseUrl=${GOVINFO_BASE_URL:-https://api.govinfo.gov}"
-  --set "qa.llmProvider=${LLM_PROVIDER_RESOLVED}"
-  --set "qa.ollamaBaseUrl=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
-  --set "qa.ollamaModel=${OLLAMA_MODEL:-llama3.1:8b}"
   --set-string "vectorizer.env.LOG_LEVEL=${LOG_LEVEL:-DEBUG}"
   --set-string "vectorizer.env.LOG_FORMAT=${LOG_FORMAT:-json}"
   --set-string "qa.env.LOG_LEVEL=${LOG_LEVEL:-DEBUG}"

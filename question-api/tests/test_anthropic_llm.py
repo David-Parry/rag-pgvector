@@ -48,7 +48,8 @@ async def test_anthropic_llm_calls_messages_api_with_grounded_messages() -> None
 
 
 @pytest.mark.asyncio
-async def test_anthropic_llm_requires_api_key() -> None:
+async def test_anthropic_llm_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     adapter = AnthropicLLMAdapter(AnthropicSettings(_env_file=None))
 
     with pytest.raises(ValueError, match="ANTHROPIC_API_KEY is required"):

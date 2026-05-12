@@ -71,7 +71,7 @@ evals/
     └── test_benchmark_integration.py     # @pytest.mark.integration (live pgvector + live judge)
 ```
 
-`evals/pyproject.toml` deps: `rag-core` (workspace), `deepeval>=2.0`, `langchain-anthropic`, `langchain-ollama`, `langchain-aws`, `langchain-postgres`, `psycopg[binary]` — same versions already pinned in `question-api/pyproject.toml`.
+`evals/pyproject.toml` deps: `rag-core` (workspace), `deepeval>=2.0`, `langchain-anthropic`, `langchain-ollama`, `langchain-aws`, `langchain-postgres`, and `psycopg[binary]`.
 
 ## Domain — `RetrieverBenchmark`
 

@@ -18,10 +18,10 @@ image:
 imagePullSecrets: []
 
 ## ----------------------------------------------------------------------------
-## AWS Bedrock authentication.
+## AWS Bedrock embedding authentication.
 ##
 ## auth.mode controls how the pods authenticate to AWS APIs:
-##   - "bearer"    (local embedding-only fallback): Secret holds AWS_BEARER_TOKEN_BEDROCK
+##   - "bearer":              Secret holds AWS_BEARER_TOKEN_BEDROCK
 ##   - "accessKey":           Secret holds AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
 ##                            and optional AWS_SESSION_TOKEN
 ##   - "irsa":                no Secret keys; the ServiceAccount is annotated
@@ -38,15 +38,12 @@ aws:
 
 bedrock:
   region: us-east-1
-  connectionSecretName: ""     # required for Claude via ACA Bedrock secret mode
-  roleArn: ""                  # required when connectionSecretName is set
   embeddingModelId: amazon.titan-embed-text-v2:0
-  embeddingBearerToken: ""     # optional old embedding path credential
-  anthropicModelId: anthropic.claude-3-5-sonnet-20241022-v2:0
+  embeddingBearerToken: ""     # optional override; defaults to aws.auth.bearerToken
   embeddingDimensions: 1024
 
 anthropic:
-  apiKey: ""                    # required when qa.llmProvider=anthropic
+  apiKey: ""                    # required for question-api
   model: claude-sonnet-4-5
 
 ## ----------------------------------------------------------------------------
@@ -119,13 +116,6 @@ qa:
   service:
     type: ClusterIP
     port: 8000
-
-  ## anthropic | bedrock | ollama
-  llmProvider: anthropic
-
-  ## Ollama (host-resident; no in-cluster pod is deployed).
-  ollamaBaseUrl: http://host.docker.internal:11434
-  ollamaModel: llama3.1:8b
 
   ## Optional hostAliases for clusters where host.docker.internal does NOT resolve
   ## from inside pods. Each item is { ip: "...", hostnames: ["..."] }.

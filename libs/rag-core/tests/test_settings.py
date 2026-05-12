@@ -12,7 +12,7 @@ import pytest
 
 from rag_core.settings import (
     AwsBedrockSettings,
-    BedrockConnectionSettings,
+    DeepEvalSettings,
     _parse_embedding_model_id,
 )
 
@@ -64,31 +64,32 @@ def test_aws_bedrock_settings_handles_missing_revision() -> None:
     assert settings.embedding_model_version == "2"
 
 
-def test_bedrock_connection_settings_parses_reference_secret() -> None:
-    settings = BedrockConnectionSettings.from_secret(
-        (
-            '{"Region":"us-east-1","ModelId":"us.anthropic.claude-3-7-sonnet-20250219-v1:0",'
-            '"EmbeddingModelId":"amazon.titan-embed-text-v2:0","MaxTokens":512,'
-            '"Temperature":0.2,"ApplicationName":"RagPgvector","TimeoutSeconds":15}'
-        )
-    )
-
-    assert settings.region == "us-east-1"
-    assert settings.model_id == "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-    assert settings.embedding_model_id == "amazon.titan-embed-text-v2:0"
-    assert settings.max_tokens == 512
-    assert settings.temperature == 0.2
-    assert settings.application_name == "RagPgvector"
-    assert settings.timeout_seconds == 15
-
-
-def test_aws_bedrock_settings_supports_approved_model_aliases() -> None:
+def test_aws_bedrock_settings_supports_embedding_model_alias() -> None:
     settings = AwsBedrockSettings(
         EMBEDDING_MODEL="approved-embedding-profile",
-        ANTHROPIC_MODEL="approved-claude-profile",
         _env_file=None,
     )
 
     assert settings.embedding_model_id == "approved-embedding-profile"
-    assert settings.chat_model_id == "approved-claude-profile"
-    assert settings.local_connection().model_id == "approved-claude-profile"
+
+
+def test_deepeval_settings_parse_comma_separated_grids() -> None:
+    settings = DeepEvalSettings(
+        DEEPEVAL_TOP_K_GRID="3,6,8",
+        DEEPEVAL_THRESHOLD_GRID="0.4,0.6,0.8",
+        _env_file=None,
+    )
+
+    assert settings.top_k_grid == [3, 6, 8]
+    assert settings.threshold_grid == [0.4, 0.6, 0.8]
+
+
+def test_deepeval_settings_parse_json_grids() -> None:
+    settings = DeepEvalSettings(
+        DEEPEVAL_TOP_K_GRID="[3, 6, 8]",
+        DEEPEVAL_THRESHOLD_GRID="[0.4, 0.6, 0.8]",
+        _env_file=None,
+    )
+
+    assert settings.top_k_grid == [3, 6, 8]
+    assert settings.threshold_grid == [0.4, 0.6, 0.8]

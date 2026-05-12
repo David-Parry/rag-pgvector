@@ -38,12 +38,6 @@ spec:
             - secretRef:
                 name: {{ include "rag.fullname" . }}-app
           env:
-            - name: LLM_PROVIDER
-              value: {{ .Values.qa.llmProvider | quote }}
-            - name: OLLAMA_BASE_URL
-              value: {{ .Values.qa.ollamaBaseUrl | quote }}
-            - name: OLLAMA_MODEL
-              value: {{ .Values.qa.ollamaModel | quote }}
             - name: RETRIEVAL_TOP_K
               value: {{ .Values.qa.topK | quote }}
             - name: RETRIEVAL_SCORE_THRESHOLD

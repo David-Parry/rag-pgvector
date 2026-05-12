@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import AliasChoices, Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class _BaseEnvSettings(BaseSettings):
@@ -31,85 +30,16 @@ class LoggingSettings(_BaseEnvSettings):
     log_format: Literal["json", "console"] = Field(default="json", alias="LOG_FORMAT")
 
 
-@dataclass(frozen=True, slots=True)
-class BedrockConnectionSettings:
-    region: str
-    model_id: str
-    embedding_model_id: str
-    max_tokens: int = 1024
-    temperature: float = 0.0
-    application_name: str = "RagPgvector"
-    timeout_seconds: int = 30
-
-    @classmethod
-    def from_secret(cls, secret_value: str) -> BedrockConnectionSettings:
-        """Parse the approved Bedrock connection secret JSON."""
-        data = json.loads(secret_value)
-        normalized = {str(key).lower(): value for key, value in data.items()}
-        return cls(
-            region=str(normalized.get("region") or "us-east-1"),
-            model_id=str(
-                normalized.get("modelid")
-                or normalized.get("model_id")
-                or normalized.get("anthropicmodel")
-                or normalized.get("anthropic_model")
-                or ""
-            ),
-            embedding_model_id=str(
-                normalized.get("embeddingmodelid")
-                or normalized.get("embedding_model_id")
-                or normalized.get("embeddingmodel")
-                or normalized.get("embedding_model")
-                or normalized.get("embedmodelid")
-                or ""
-            ),
-            max_tokens=int(normalized.get("maxtokens") or normalized.get("max_tokens") or 1024),
-            temperature=float(normalized.get("temperature") or 0.0),
-            application_name=str(
-                normalized.get("applicationname")
-                or normalized.get("application_name")
-                or "RagPgvector"
-            ),
-            timeout_seconds=int(
-                normalized.get("timeoutseconds")
-                or normalized.get("timeout_seconds")
-                or 30
-            ),
-        )
-
-
 class AwsBedrockSettings(_BaseEnvSettings):
     region: str = Field(default="us-east-1", alias="AWS_REGION")
     embedding_model_id: str = Field(
         default="amazon.titan-embed-text-v2:0",
         validation_alias=AliasChoices("EMBEDDING_MODEL", "BEDROCK_EMBEDDING_MODEL_ID"),
     )
-    chat_model_id: str = Field(
-        default="anthropic.claude-3-5-sonnet-20241022-v2:0",
-        validation_alias=AliasChoices("ANTHROPIC_MODEL", "BEDROCK_ANTHROPIC_MODEL_ID"),
-    )
     embedding_dimensions: int = Field(default=1024, alias="BEDROCK_EMBEDDING_DIMENSIONS")
-    connection_secret_name: str = Field(default="", alias="BEDROCK_CONNECTION_SECRET_NAME")
-    role_arn: str = Field(default="", alias="BEDROCK_ROLE_ARN")
-    max_tokens: int = Field(default=1024, alias="BEDROCK_MAX_TOKENS")
-    temperature: float = Field(default=0.0, alias="BEDROCK_TEMPERATURE")
-    application_name: str = Field(default="RagPgvector", alias="BEDROCK_APPLICATION_NAME")
-    timeout_seconds: int = Field(default=30, alias="BEDROCK_TIMEOUT_SECONDS")
     bearer_token: SecretStr | None = Field(default=None, alias="AWS_BEARER_TOKEN_BEDROCK")
     access_key_id: SecretStr | None = Field(default=None, alias="AWS_ACCESS_KEY_ID")
     secret_access_key: SecretStr | None = Field(default=None, alias="AWS_SECRET_ACCESS_KEY")
-
-    def local_connection(self) -> BedrockConnectionSettings:
-        """Build a Bedrock connection from direct environment settings."""
-        return BedrockConnectionSettings(
-            region=self.region,
-            model_id=self.chat_model_id,
-            embedding_model_id=self.embedding_model_id,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            application_name=self.application_name,
-            timeout_seconds=self.timeout_seconds,
-        )
 
     @property
     def embedding_model_name(self) -> str:
@@ -175,7 +105,33 @@ class RetrievalSettings(_BaseEnvSettings):
     score_threshold: float = Field(default=0.25, alias="RETRIEVAL_SCORE_THRESHOLD")
 
 
-LLMProvider = Literal["anthropic", "bedrock", "ollama"]
+class DeepEvalSettings(_BaseEnvSettings):
+    judge_provider: Literal["anthropic", "ollama"] = Field(
+        default="anthropic",
+        alias="DEEPEVAL_JUDGE_PROVIDER",
+    )
+    top_k_grid: Annotated[list[int], NoDecode] = Field(
+        default_factory=lambda: [3, 5, 8],
+        alias="DEEPEVAL_TOP_K_GRID",
+    )
+    threshold_grid: Annotated[list[float], NoDecode] = Field(
+        default_factory=lambda: [0.4, 0.6, 0.8],
+        alias="DEEPEVAL_THRESHOLD_GRID",
+    )
+    goldens_path: str = Field(
+        default="evals/src/rag_evals/data/goldens_bills_115hr1625enr.json",
+        alias="DEEPEVAL_GOLDENS_PATH",
+    )
+
+    @field_validator("top_k_grid", mode="before")
+    @classmethod
+    def _parse_top_k_grid(cls, value: object) -> object:
+        return _parse_csv_or_json_list(value, cast=int)
+
+    @field_validator("threshold_grid", mode="before")
+    @classmethod
+    def _parse_threshold_grid(cls, value: object) -> object:
+        return _parse_csv_or_json_list(value, cast=float)
 
 
 # Bedrock model ids follow the convention `<vendor>.<family>-v<major>:<rev>`,
@@ -223,3 +179,14 @@ def _parse_embedding_model_id(model_id: str) -> tuple[str, str]:
     else:
         version = ""
     return name, version
+
+
+def _parse_csv_or_json_list(value: object, *, cast: type[int] | type[float]) -> object:
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        return [cast(item) for item in json.loads(text)]
+    return [cast(part.strip()) for part in text.split(",") if part.strip()]

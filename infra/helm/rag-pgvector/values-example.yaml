@@ -10,11 +10,8 @@ aws:
 
 bedrock:
   region: us-east-1
-  connectionSecretName: "rag-bedrock-config-dev"
-  roleArn: "arn:aws:iam::123456789012:role/BedrockInvokeRole"
   embeddingModelId: amazon.titan-embed-text-v2:0
   embeddingBearerToken: "REPLACE_WITH_EMBEDDING_ACCOUNT_BEDROCK_API_KEY"
-  anthropicModelId: anthropic.claude-3-5-sonnet-20241022-v2:0
   embeddingDimensions: 1024
 
 anthropic:
@@ -25,8 +22,5 @@ govinfo:
   apiKey: "REPLACE_WITH_GOVINFO_API_KEY"
 
 qa:
-  llmProvider: anthropic
-  ollamaBaseUrl: http://host.docker.internal:11434
-  ollamaModel: llama3.1:8b
   topK: 5
   scoreThreshold: 0.25

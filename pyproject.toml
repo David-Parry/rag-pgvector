@@ -6,10 +6,11 @@ readme = "README.md"
 requires-python = "==3.12.*"
 
 [tool.uv.workspace]
-members = ["vectorizer", "question-api", "libs/rag-core"]
+members = ["vectorizer", "question-api", "libs/rag-core", "evals"]
 
 [tool.uv.sources]
 rag-core = { workspace = true }
+question-api = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -30,6 +31,7 @@ src = [
     "libs/rag-core/src",
     "vectorizer/src",
     "question-api/src",
+    "evals/src",
 ]
 
 [tool.ruff.lint]
@@ -61,6 +63,7 @@ mypy_path = [
     "libs/rag-core/src",
     "vectorizer/src",
     "question-api/src",
+    "evals/src",
 ]
 
 [[tool.mypy.overrides]]
@@ -73,9 +76,21 @@ testpaths = [
     "libs/rag-core/tests",
     "vectorizer/tests",
     "question-api/tests",
+    "evals/tests",
     "tests",
 ]
-addopts = "-ra --strict-markers --strict-config"
+pythonpath = [
+    "libs/rag-core/src",
+    "vectorizer/src",
+    "question-api/src",
+    "evals/src",
+    "libs/rag-core/tests",
+    "vectorizer/tests",
+    "question-api/tests",
+    "evals/tests",
+    "tests",
+]
+addopts = "-ra --strict-markers --strict-config -m 'not integration'"
 markers = [
     "integration: tests requiring external services (testcontainers, network)",
 ]

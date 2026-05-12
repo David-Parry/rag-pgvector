@@ -3,7 +3,8 @@
 A `uv`-managed Python 3.12 monorepo for a small, opinionated RAG stack:
 
 - `vectorizer/` — FastAPI pod that pulls PDFs from [api.govinfo.gov](https://api.govinfo.gov), extracts text with PyMuPDF, splits with LangChain, embeds with an approved AWS Bedrock embedding model, and upserts into a vanilla `postgres:17 + apt postgresql-17-pgvector` database.
-- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question with Bedrock, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks a switchable LLM (Anthropic Claude through AWS Bedrock by default, or a host-resident Ollama on the Docker Desktop laptop) to answer using only that context.
+- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks direct Anthropic Claude to answer using only that context.
+- `evals/` — DeepEval retriever benchmark that sweeps pgvector `top_k` and cosine-distance thresholds against hand-curated goldens for `BILLS-115hr1625enr`.
 - `libs/rag-core/` — shared `Protocol` ports, the grounded system prompt, the chunk splitter, settings, and structlog config (DRY for both apps without coupling their deployments).
 - `infra/` — custom `postgres-pgvector` Dockerfile and an umbrella Helm chart that deploys all three pods (`postgres`, `vectorizer`, `question-api`) into Docker Desktop's built-in Kubernetes.
 
@@ -13,7 +14,6 @@ A `uv`-managed Python 3.12 monorepo for a small, opinionated RAG stack:
 flowchart LR
     subgraph Laptop["Laptop (Docker Desktop host)"]
         User[curl / client]
-        HostOllama["Ollama (host process, :11434)"]
     end
 
     User -->|"POST localhost:8001/ingest"| PFv[kubectl port-forward 8001 -> svc/vectorizer:8000]
@@ -29,9 +29,7 @@ flowchart LR
     Vec -->|HTTPS| Gov[api.govinfo.gov/packages]
     Vec -->|Titan v2 Embed| Bedrock[(AWS Bedrock)]
     QA -->|Titan v2 Embed| Bedrock
-    QA -->|Grounded prompt| LLM{LLM_PROVIDER}
-    LLM -->|bedrock| Anthropic[Anthropic Claude via AWS Bedrock]
-    LLM -->|"ollama via host.docker.internal:11434"| HostOllama
+    QA -->|Grounded prompt| Anthropic[Direct Anthropic Claude API]
 ```
 
 ## Service flows
@@ -112,10 +110,8 @@ flowchart TD
     Filter -- "yes" --> Build["build_user_prompt<br/>rag_core/prompts.py<br/>numbered CONTEXT block:<br/>[i] packageId, sourceUrl, page + chunk text"]
     Build -->|"SYSTEM_PROMPT_QA + user prompt"| LLM["LLMPort.generate<br/>system, user"]
 
-    LLM -->|"LLM_PROVIDER=bedrock"| Anthropic["BedrockLLMAdapter<br/>Bedrock Runtime converse"]
-    LLM -->|"LLM_PROVIDER=ollama"| Ollama["OllamaLLMAdapter<br/>host.docker.internal:11434"]
+    LLM -->|generate| Anthropic["AnthropicLLMAdapter<br/>Messages API"]
     Anthropic --> Ans["grounded answer text"]
-    Ollama --> Ans
 
     Ans --> ToCit["_to_citations kept chunks<br/>packageId, sourceUrl, pageNumber,<br/>score, 280-char snippet"]
     ToCit --> Resp["AskResponse<br/>answer, citations[],<br/>used_context_count, provider"]
@@ -129,7 +125,7 @@ Notes:
 - pgvector returns cosine **distance**, so `AskService._apply_threshold` keeps chunks with `score <= threshold` (lower = more similar).
 - If nothing survives the threshold, the service short-circuits with the fixed `"I don't know based on the provided context."` reply and never calls the LLM (no spend, no hallucination surface).
 - Grounding happens in `rag_core.prompts.build_user_prompt`: kept chunks become a numbered `CONTEXT:` block carrying `packageId`, `sourceUrl`, and `pageNumber`, paired with `SYSTEM_PROMPT_QA` which forbids tool use and mandates a trailing `Sources:` section.
-- The LLM is a `Protocol` port — swapping Bedrock for Ollama is a single `LLM_PROVIDER` env flip wired in `question_api/core/composition.py`.
+- The LLM is a `Protocol` port implemented by direct Anthropic Claude API calls in `question_api/core/composition.py`.
 
 ## Prerequisites
 
@@ -137,7 +133,6 @@ Notes:
 - `uv` ≥ 0.5 (`brew install uv`)
 - `helm` ≥ 3.13 (`brew install helm`)
 - `kubectl` (`brew install kubectl`)
-- (Optional) [`ollama`](https://ollama.com/) installed natively on the laptop if you want to use `LLM_PROVIDER=ollama`.
 
 > Docker Desktop's built-in Kubernetes shares the Docker daemon's image store, so locally-built images are visible to the cluster without any push or `kind load` step. We do not use kind, minikube, or any external cluster tool.
 
@@ -152,44 +147,28 @@ $EDITOR .env
 
 | Key | What it is | Required when |
 |-----|-----------|---------------|
-| `ANTHROPIC_API_KEY_FILE` / `ANTHROPIC_API_KEY` | Direct Anthropic API key file or value for Claude generation | `LLM_PROVIDER=anthropic` |
-| `ANTHROPIC_DIRECT_MODEL` | Direct Anthropic model name, e.g. `claude-3-5-sonnet-latest` | `LLM_PROVIDER=anthropic` |
-| `BEDROCK_CONNECTION_SECRET_NAME` | ACA Secrets Manager secret containing approved Claude `Region` and `ModelId` | backup path with `LLM_PROVIDER=bedrock` |
-| `BEDROCK_ROLE_ARN` | ACA IAM role assumed before Claude Bedrock Runtime calls | backup path with `LLM_PROVIDER=bedrock` |
-| `AWS_REGION` | Region used for AWS clients before the secret is loaded | always |
+| `ANTHROPIC_API_KEY_FILE` / `ANTHROPIC_API_KEY` | Direct Anthropic API key file or value for Claude generation | always |
+| `ANTHROPIC_DIRECT_MODEL` | Direct Anthropic model name, e.g. `claude-3-5-sonnet-latest` | optional |
+| `AWS_REGION` | Region used for embedding AWS clients | always |
 | `EMBEDDING_MODEL` | Embedding model ID for the direct embedding Bedrock credential path | always |
-| `ANTHROPIC_MODEL` | Local fallback Bedrock Claude model ID when no ACA connection secret is configured | local fallback |
 | `BEDROCK_EMBEDDING_DIMENSIONS` | `1024` | always |
-| `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` | Optional local AWS profile that Helm can export into temporary pod credentials for reading the secret and assuming the role | local Docker Desktop with `LLM_PROVIDER=bedrock` |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Optional local AWS credentials for reading the secret and assuming the role | only if `aws.auth.mode=accessKey` |
+| `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` | Optional local AWS profile that Helm can export into temporary pod credentials for embeddings | local Docker Desktop with `aws.auth.mode=accessKey` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Optional local AWS credentials for embeddings | only if `aws.auth.mode=accessKey` |
 | `AWS_BEARER_TOKEN_BEDROCK` | Bedrock API key for the embedding account; embeddings use this old direct credential path | embeddings |
-| `LLM_PROVIDER` | `anthropic` (default), `bedrock`, or `ollama` | always |
-| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | when `LLM_PROVIDER=ollama` |
-| `OLLAMA_MODEL` | e.g. `llama3.1:8b` | when `LLM_PROVIDER=ollama` |
 | `GOVINFO_API_KEY` | Free key from <https://api.data.gov/signup/> | always |
 | `DATABASE_URL` | psycopg3 URL for pgvector | always |
 | `RETRIEVAL_TOP_K` / `RETRIEVAL_SCORE_THRESHOLD` | Defaults `5` / `0.25` | optional |
+| `DEEPEVAL_JUDGE_PROVIDER` | `anthropic` or `ollama` for the retriever benchmark judge | benchmark runs |
+| `DEEPEVAL_TOP_K_GRID` / `DEEPEVAL_THRESHOLD_GRID` | Comma-separated retriever benchmark sweep grids | optional |
+| `DEEPEVAL_GOLDENS_PATH` | Golden dataset path for `rag-evals` | optional |
 
-## AWS Bedrock authentication
+## Authentication
 
-Direct Anthropic Claude is the default question-answering path for local work. Put the API key in `claudeapi.txt` and set `ANTHROPIC_API_KEY_FILE=claudeapi.txt`, or set `ANTHROPIC_API_KEY` directly in the environment. `claudeapi.txt` is ignored by Git.
+Direct Anthropic Claude is the question-answering path. Put the API key in `claudeapi.txt` and set `ANTHROPIC_API_KEY_FILE=claudeapi.txt`, or set `ANTHROPIC_API_KEY` directly in the environment. `claudeapi.txt` is ignored by Git.
 
-Bedrock Claude remains available as a backup by setting `LLM_PROVIDER=bedrock`. In that mode, the question API reads `BEDROCK_CONNECTION_SECRET_NAME`, loads approved Claude settings from Secrets Manager, assumes `BEDROCK_ROLE_ARN` through STS, and uses those temporary credentials for Bedrock Runtime `converse` calls. The secret JSON shape is:
+Embeddings use the existing Bedrock embedding path: `EMBEDDING_MODEL`, `BEDROCK_EMBEDDING_DIMENSIONS`, and `AWS_BEARER_TOKEN_BEDROCK` (or direct AWS keys if that is how the embedding account is configured). Anthropic does not provide embeddings, so changing this requires selecting a replacement embedding provider.
 
-```json
-{
-  "Region": "us-east-1",
-  "ModelId": "approved-anthropic-bedrock-model-or-inference-profile-id",
-  "MaxTokens": 1024,
-  "Temperature": 0.0,
-  "ApplicationName": "RagPgvector",
-  "TimeoutSeconds": 30
-}
-```
-
-Embeddings intentionally do not use the ACA Claude role because Amazon Titan is not enabled in that account. They use the old direct Bedrock embedding path: `EMBEDDING_MODEL`, `BEDROCK_EMBEDDING_DIMENSIONS`, and `AWS_BEARER_TOKEN_BEDROCK` (or direct AWS keys if that is how the embedding account is configured).
-
-For local Helm deployments, use `aws.auth.mode=accessKey` to give the pod temporary credentials that can read the ACA secret and assume the Claude Bedrock role. `scripts/helm-install.sh` and `scripts/ps/Helm-Install.ps1` can export these from `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` with `aws configure export-credentials`, including `AWS_SESSION_TOKEN` for SSO or other temporary sessions. Set `bedrock.embeddingBearerToken` separately for embeddings. For EKS, use `aws.auth.mode=irsa` and set `aws.auth.irsaRoleArn` to the application role; embeddings can still receive `bedrock.embeddingBearerToken` separately.
+For local Helm deployments, use `aws.auth.mode=accessKey` only when the embedding account requires AWS keys. `scripts/helm-install.sh` and `scripts/ps/Helm-Install.ps1` can export these from `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` with `aws configure export-credentials`, including `AWS_SESSION_TOKEN` for SSO or other temporary sessions. Set `bedrock.embeddingBearerToken` for bearer-token embedding access. For EKS, use `aws.auth.mode=irsa` and set `aws.auth.irsaRoleArn` to the embedding role.
 
 ## Local pod workflow (default)
 
@@ -326,19 +305,9 @@ uv run uvicorn question_api.main:app  --reload --port 8002
 
 If you are on a network that blocks or MITMs public PyPI, use an internal mirror (for example JFrog) for both host `uv sync` and image builds. Image builds: `documentation/DOCKER_PYPI_MIRROR.md`.
 
-## Using Ollama (on the host, not in the cluster)
+## Host Aliases
 
-The chart **does not deploy Ollama**. Instead, it expects Ollama to run on the Docker Desktop host (your laptop):
-
-```bash
-ollama serve &              # if not already running
-ollama pull llama3.1:8b
-curl http://localhost:11434/api/tags  # sanity check
-```
-
-Then re-deploy with `LLM_PROVIDER=ollama` in your `.env` and re-run `bash scripts/helm-install.sh`. The question-api pod calls `http://host.docker.internal:11434` from inside the cluster.
-
-Docker Desktop Kubernetes resolves `host.docker.internal` from inside pods automatically. If you ever switch to a cluster that doesn't (e.g. a remote cluster), override the chart value:
+Docker Desktop Kubernetes resolves `host.docker.internal` from inside pods automatically. If you ever switch to a cluster that does not, override the chart value:
 
 ```yaml
 qa:
@@ -357,10 +326,11 @@ rag-pgvector/
 ├── docker-compose.yml          # postgres-only convenience for non-pod dev
 ├── vectorizer/                 # service:  ingest + embed + upsert
 ├── question-api/               # service: retrieve + ground + generate
+├── evals/                      # DeepEval retriever benchmark
 ├── libs/rag-core/              # shared Protocols, prompts, chunker, settings
 ├── infra/
 │   ├── docker/postgres-pgvector/   # FROM postgres:17 + apt postgresql-17-pgvector
-│   └── helm/rag-pgvector/          # umbrella chart (3 pods, no Ollama, no Ingress)
+│   └── helm/rag-pgvector/          # umbrella chart (3 pods, no Ingress)
 ├── scripts/                    # docker-desktop-up, helm-install, port-forward, seed-ingest
 └── tests/                      # repo-level tests (helm lint + helm template)
 ```
@@ -377,11 +347,12 @@ The test suite covers:
 - Vectorizer domain orchestration with fake ports (`FakeGovInfoClient`, `FakeLoader`, `FakeStore`).
 - govinfo HTTP client with `respx` mocks.
 - Question-api retrieval/threshold/grounding with fake ports.
-- Helm chart smoke tests: `helm lint` + `helm template` in all three `aws.auth.mode`s and both LLM providers.
+- Retriever benchmark grid, threshold filtering, and metadata-filter forwarding with fake ports.
+- Helm chart smoke tests: `helm lint` + `helm template` in supported `aws.auth.mode` configurations.
 
 A separate `@pytest.mark.integration` marker is reserved for testcontainers-backed adapter tests against a real pgvector — these are opt-in (run with `pytest -m integration`).
+Retriever benchmark integration: `uv run pytest -m integration evals/tests/` (requires `BILLS-115hr1625enr` ingested).
 
 ## Things explicitly out of scope
 
 - No CronJob ingestion scheduler — ingestion is operator-driven via `POST /ingest` per the original design.
-- No in-cluster Ollama; the host-resident model is used when `LLM_PROVIDER=ollama`.

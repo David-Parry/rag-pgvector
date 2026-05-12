@@ -32,7 +32,7 @@ class AnthropicLLMAdapter:
     def _generate_sync(self, system: str, user: str) -> str:
         api_key = self._settings.api_key.get_secret_value()
         if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic")
+            raise ValueError("ANTHROPIC_API_KEY is required for question-api")
 
         payload = {
             "model": self._settings.model,
