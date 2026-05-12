@@ -4,7 +4,7 @@
 #
 # The pod runs the AskService pipeline:
 #   embed(question) with Titan v2  ->  pgvector similarity search
-#   ->  prompt-stuff top-K chunks  ->  Anthropic / Ollama (per LLM_PROVIDER)
+#   ->  prompt-stuff top-K chunks  ->  Bedrock / Ollama (per LLM_PROVIDER)
 #   ->  AskResponse{ answer, citations, usedContextCount, provider }.
 #
 # Usage:

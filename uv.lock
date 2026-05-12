@@ -29,25 +29,6 @@ wheels = [
 ]
 
 [[package]]
-name = "anthropic"
-version = "0.101.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "anyio" },
-    { name = "distro" },
-    { name = "docstring-parser" },
-    { name = "httpx" },
-    { name = "jiter" },
-    { name = "pydantic" },
-    { name = "sniffio" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/cb/9d0123243e749ac3a579972b2c398971bce1dc57bcc4efb08066df610360/anthropic-0.101.0.tar.gz", hash = "sha256:1116a6a87c55757e0fbe3e1ba40804fbd04de7963601a6dd6b539a889f18de3e", size = 758603, upload-time = "2026-05-11T15:46:33.944Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/b2/74ff06762d005ecf1658929a292df0acb786d025f6a6c54fcb30e2dc7761/anthropic-0.101.0-py3-none-any.whl", hash = "sha256:cc3cc6576989471e2aa9132258034ad0ff0d8fe500b04ac499e4e46ed68c5ed0", size = 753594, upload-time = "2026-05-11T15:46:32.216Z" },
-]
-
-[[package]]
 name = "anyio"
 version = "4.13.0"
 source = { registry = "https://pypi.org/simple" }
@@ -163,19 +144,18 @@ wheels = [
 
 [[package]]
 name = "chonkie"
-version = "1.6.5"
+version = "1.6.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "chonkie-core" },
     { name = "httpx" },
     { name = "numpy" },
     { name = "tenacity" },
-    { name = "tokie" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/09/6686674e41f02efc0d58873aee80a378d6d30a4336b02f8c466c1829113d/chonkie-1.6.5.tar.gz", hash = "sha256:756cd71428c9a55c58e2aed792671858cb9d4624b4a4ad5332c1c37bbd22a8b7", size = 197766, upload-time = "2026-05-06T01:17:52.03Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c0/e0/fa69454a516be555f9f0b1360cb406045a8cda09ef16f7da32c6a86ef3a7/chonkie-1.6.4.tar.gz", hash = "sha256:5935044977b9bf31ae5379d445785e639b74e657108a9df4bbe7cab20855ce7a", size = 196498, upload-time = "2026-04-21T20:50:35.976241Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/f0/a45cb628c137369a1836c2664b05d40011a62c0e0252460875c11de34737/chonkie-1.6.5-py3-none-any.whl", hash = "sha256:d28659c54de4cad5e54d45a786961492017f1c7196f35c257a4229e30a33a9d4", size = 240886, upload-time = "2026-05-06T01:17:49.985Z" },
+    { url = "https://files.pythonhosted.org/packages/47/f3/c45cb778846db9e10a5c6cf84a7697bbccb9765e2615f3f55c51ad2be2f0/chonkie-1.6.4-py3-none-any.whl", hash = "sha256:b9bae7a9ba72252f485370dca0ab25e1552380542643d710a876192714edb45c", size = 240369, upload-time = "2026-04-21T20:50:34.372931Z" },
 ]
 
 [[package]]
@@ -446,20 +426,6 @@ wheels = [
 ]
 
 [[package]]
-name = "langchain-anthropic"
-version = "1.4.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "anthropic" },
-    { name = "langchain-core" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/e3/d2f9dec95602524b1cfb4be2747ba5bc38d32501b2a56cb4bcb76e80bb45/langchain_anthropic-1.4.3.tar.gz", hash = "sha256:f8a2442463c0629b1b3110eaeaa56fdbdc87df2a802f8c7f5ecf611eb4874ec8", size = 685219, upload-time = "2026-05-03T17:33:27.118Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/55/482a1968c95275e8be6d8c1e53b54f0f7be0b8b155ce1608c947a95cf543/langchain_anthropic-1.4.3-py3-none-any.whl", hash = "sha256:65466e0f2f95909a009708f2958e917dfdbfab79c612b4484a30866a85e1f291", size = 50389, upload-time = "2026-05-03T17:33:25.671Z" },
-]
-
-[[package]]
 name = "langchain-aws"
 version = "1.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -476,7 +442,7 @@ wheels = [
 
 [[package]]
 name = "langchain-core"
-version = "1.4.0"
+version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonpatch" },
@@ -489,9 +455,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uuid-utils" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/59/de/679a53472c25860837e32c0442c962fa86e95317a36460e2c9d5c91b17c2/langchain_core-1.4.0.tar.gz", hash = "sha256:1dc341eed802ed9c117c0df3923c991e5e9e226571e5725c194eeb5bd93d1a7f", size = 920260, upload-time = "2026-05-11T18:42:35.919Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/ae/8b74458fc3850ec3d150eb9f45e857db129dafa801fb5cf173dfc9f8bbf3/langchain_core-1.3.3.tar.gz", hash = "sha256:fa510a5db8efdc0c6ff41c0939fb5c00a0183c11f6b84233e892e3227ff69182", size = 915041, upload-time = "2026-05-05T19:02:36.612821Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/1a/86c38c27b81913a1c6c12448cab55defb5a1097c7dc9a4cea83f55477a2d/langchain_core-1.4.0-py3-none-any.whl", hash = "sha256:23cbbdb46e38ddd1dd5247e6167e96013eae74bea4c5949c550809970a9e565c", size = 548120, upload-time = "2026-05-11T18:42:33.992Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/01/4771b7ab2af1d1aba5b710bd8f13d9225c609425214b357590a17b01be77/langchain_core-1.3.3-py3-none-any.whl", hash = "sha256:18aae8506f37da7f74398492279a7d6efcee4f8e23c4c41c7af080eeb7ef7bd1", size = 543857, upload-time = "2026-05-05T19:02:34.520716Z" },
 ]
 
 [[package]]
@@ -1007,7 +973,6 @@ source = { editable = "question-api" }
 dependencies = [
     { name = "fastapi" },
     { name = "langchain" },
-    { name = "langchain-anthropic" },
     { name = "langchain-aws" },
     { name = "langchain-ollama" },
     { name = "langchain-postgres" },
@@ -1023,7 +988,6 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "langchain", specifier = ">=1.2.0,<2.0.0" },
-    { name = "langchain-anthropic", specifier = ">=1.4.0" },
     { name = "langchain-aws", specifier = ">=1.4.0" },
     { name = "langchain-ollama", specifier = ">=0.3.0" },
     { name = "langchain-postgres", specifier = ">=0.0.17" },
@@ -1040,6 +1004,8 @@ name = "rag-core"
 version = "0.1.0"
 source = { editable = "libs/rag-core" }
 dependencies = [
+    { name = "boto3" },
+    { name = "botocore" },
     { name = "chonkie" },
     { name = "langchain-core" },
     { name = "pydantic" },
@@ -1049,8 +1015,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chonkie", specifier = ">=1.6,<2.0" },
-    { name = "langchain-core", specifier = ">=1.3.2,<2.0.0" },
+    { name = "boto3", specifier = ">=1.35.0" },
+    { name = "botocore", specifier = ">=1.35.0" },
+    { name = "chonkie", specifier = ">=1.6,<1.6.5" },
+    { name = "langchain-core", specifier = ">=1.3.2,<1.4.0" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pydantic-settings", specifier = ">=2.6.0" },
     { name = "structlog", specifier = ">=24.4.0" },
@@ -1251,19 +1219,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/ac/a597c3a0e02b26cbed6dd07df68be1e57684766fd1c381dee9b170a99690/testcontainers-4.14.2.tar.gz", hash = "sha256:1340ccf16fe3acd9389a6c9e1d9ab21d9fe99a8afdf8165f89c3e69c1967d239", size = 166841, upload-time = "2026-03-18T05:19:16.696Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/2d/26b8b30067d94339afee62c3edc9b803a6eb9332f521ba77d8aaab5de873/testcontainers-4.14.2-py3-none-any.whl", hash = "sha256:0d0522c3cd8f8d9627cda41f7a6b51b639fa57bdc492923c045117933c668d68", size = 125712, upload-time = "2026-03-18T05:19:15.29Z" },
-]
-
-[[package]]
-name = "tokie"
-version = "0.0.9"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/95/3c/f76865a207ca5fdac17842ddcd5ca4b27699c81cb8424b3290d9b3603970/tokie-0.0.9.tar.gz", hash = "sha256:b2439850258890d7ecf1e21aeeebe06d8ae81879b8349959438da2841fe6553c", size = 135349, upload-time = "2026-05-05T18:21:49.305Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/29/6cd8e4954c6b014a839447289150ee60c7d0d706681fffe97076c28943c4/tokie-0.0.9-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:ee7ad68173f3b874ba967df9cbe20203461df9a60624076595320daeab53c269", size = 2549471, upload-time = "2026-05-05T18:21:34.038Z" },
-    { url = "https://files.pythonhosted.org/packages/8d/3d/9d1a64d72a6de089fda06eb0728c911ce63444d113195d0c425d9170abe3/tokie-0.0.9-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a725368781e9b008de7347f56a6f24cb4a6d4df5705f328d764f70a55b9c74ff", size = 2463192, upload-time = "2026-05-05T18:21:35.606Z" },
-    { url = "https://files.pythonhosted.org/packages/53/8b/2dbef40651425d212e01ff611eaba8c5e8308b4647fc57f184f6944411b9/tokie-0.0.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6ab65bdbb40ffa0f54858779418fcd440b79ebfe2c13f18abb7a1b767ca94ccc", size = 2768954, upload-time = "2026-05-05T18:21:37.174Z" },
-    { url = "https://files.pythonhosted.org/packages/09/1d/c14ae0bc273cd47c06184a2c4bd7fb330023058f9e7b54545bbf092b0ce5/tokie-0.0.9-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:d46323296393e91c65a4ec61b688d5b070e33607bb6926523f8c7a16e576713a", size = 2731647, upload-time = "2026-05-05T18:21:38.472Z" },
-    { url = "https://files.pythonhosted.org/packages/51/10/baa5bdcdec0a47b8db4f7100ff41e2eacb011c5b817278f7ae516bac0c42/tokie-0.0.9-cp312-cp312-win_amd64.whl", hash = "sha256:c5f6cffcabd2c3838bc39ba08b834a5dfea1b5f73f223dcfadc7009bb5390d53", size = 2309825, upload-time = "2026-05-05T18:21:39.962Z" },
 ]
 
 [[package]]

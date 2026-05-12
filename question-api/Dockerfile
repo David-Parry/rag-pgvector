@@ -1,7 +1,13 @@
+# syntax=docker/dockerfile:1
 # Multi-stage build for the question-api pod.
 # Build context MUST be the monorepo root.
 #
 #   docker build -t rag-pgvector/question-api:0.1.0 -f question-api/Dockerfile .
+#
+# Corporate / JFrog: see documentation/DOCKER_PYPI_MIRROR.md (same pattern as vectorizer).
+#
+# When the index URL contains `user:token@`, the builder merges credentials into
+# `/root/.netrc` and uses a credential-free index URL so artifact downloads authenticate.
 #
 # Docker Desktop's built-in Kubernetes shares the Docker daemon, so this image
 # is visible to the cluster without any registry push or load step.
@@ -15,11 +21,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.7 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv
 
 WORKDIR /workspace
 
 COPY pyproject.toml uv.lock ./
+COPY scripts/docker/rewrite_uv_lock_for_mirror.py scripts/docker/prepare_artifactory_for_uv.py scripts/docker/
 COPY libs/rag-core/pyproject.toml libs/rag-core/README.md libs/rag-core/
 COPY libs/rag-core/src libs/rag-core/src
 COPY vectorizer/pyproject.toml vectorizer/README.md vectorizer/
@@ -27,7 +34,29 @@ COPY vectorizer/src vectorizer/src
 COPY question-api/pyproject.toml question-api/README.md question-api/
 COPY question-api/src question-api/src
 
-RUN uv sync --package question-api --frozen --no-dev
+ARG UV_DEFAULT_INDEX=
+
+RUN --mount=type=secret,id=uv_default_index,required=false \
+    --mount=type=secret,id=ssl_cert_bundle,required=false \
+    --mount=type=secret,id=netrc,required=false \
+    set -eu; \
+    if [ -s /run/secrets/netrc ]; then \
+      install -m 600 /run/secrets/netrc /root/.netrc; \
+    fi; \
+    UV_IDX="${UV_DEFAULT_INDEX}"; \
+    if [ -s /run/secrets/uv_default_index ]; then \
+      UV_IDX="$(tr -d '\r\n' < /run/secrets/uv_default_index)"; \
+    fi; \
+    if [ -s /run/secrets/ssl_cert_bundle ]; then \
+      export SSL_CERT_FILE=/run/secrets/ssl_cert_bundle; \
+    fi; \
+    if [ -n "${UV_IDX}" ]; then \
+      export UV_DEFAULT_INDEX="${UV_IDX}"; \
+      export UV_DEFAULT_INDEX="$(python3 scripts/docker/prepare_artifactory_for_uv.py)"; \
+      export UV_CONCURRENT_DOWNLOADS="${UV_CONCURRENT_DOWNLOADS:-2}"; \
+      python3 scripts/docker/rewrite_uv_lock_for_mirror.py uv.lock; \
+    fi; \
+    uv sync --package question-api --frozen --no-dev
 
 # ----- Stage 2: runtime -------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime

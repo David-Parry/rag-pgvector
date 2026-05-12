@@ -31,9 +31,9 @@ class _ProviderSelector(BaseSettings):
 @dataclass(slots=True)
 class QuestionApiSettings:
     logging: LoggingSettings
+    anthropic: AnthropicSettings
     aws: AwsBedrockSettings
     database: DatabaseSettings
-    anthropic: AnthropicSettings
     ollama: OllamaSettings
     retrieval: RetrievalSettings
     llm_provider: LLMProvider
@@ -42,9 +42,9 @@ class QuestionApiSettings:
     def load(cls) -> QuestionApiSettings:
         return cls(
             logging=LoggingSettings(),
+            anthropic=AnthropicSettings(),
             aws=AwsBedrockSettings(),
             database=DatabaseSettings(),
-            anthropic=AnthropicSettings(),
             ollama=OllamaSettings(),
             retrieval=RetrievalSettings(),
             llm_provider=_ProviderSelector().llm_provider,

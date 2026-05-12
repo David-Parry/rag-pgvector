@@ -25,6 +25,7 @@ ENV/
 .env
 .env.local
 .env.*.local
+claudeapi.txt
 
 # IDE
 .vscode/
@@ -59,3 +60,5 @@ kubeconfig
 # Logs
 *.log
 logs/
+
+uv-default-index.txt

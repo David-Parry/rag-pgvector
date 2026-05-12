@@ -45,12 +45,7 @@ class TitanEmbeddingsAdapter:
 
 
 def _ensure_bedrock_auth_env(settings: AwsBedrockSettings) -> None:
-    """Mirror Pydantic-Settings values into env vars boto3 / langchain-aws expect.
-
-    Pydantic-Settings reads from .env at startup but doesn't re-export to ``os.environ``.
-    The langchain-aws SDK reads ``AWS_BEARER_TOKEN_BEDROCK`` and the standard AWS
-    credential env vars directly from the process environment, so we set them here.
-    """
+    """Mirror embedding credentials into env vars boto3 / langchain-aws expect."""
     if settings.bearer_token is not None:
         os.environ.setdefault(
             "AWS_BEARER_TOKEN_BEDROCK",

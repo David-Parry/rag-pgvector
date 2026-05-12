@@ -17,9 +17,48 @@ if [[ -f .env ]]; then
   set +o allexport
 fi
 
+if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+  ANTHROPIC_KEY_FILE="${ANTHROPIC_API_KEY_FILE:-$ROOT_DIR/claudeapi.txt}"
+  if [[ -f "$ANTHROPIC_KEY_FILE" ]]; then
+    ANTHROPIC_API_KEY="$(tr -d '\r\n' < "$ANTHROPIC_KEY_FILE")"
+    export ANTHROPIC_API_KEY
+  fi
+fi
+
 if ! command -v helm >/dev/null 2>&1; then
   echo "ERROR: helm is not installed. Install with: brew install helm" >&2
   exit 1
+fi
+
+AWS_AUTH_MODE_RESOLVED="${AWS_AUTH_MODE:-}"
+if [[ -z "$AWS_AUTH_MODE_RESOLVED" ]]; then
+  if [[ -n "${BEDROCK_CONNECTION_SECRET_NAME:-}" ]]; then
+    AWS_AUTH_MODE_RESOLVED="accessKey"
+  else
+    AWS_AUTH_MODE_RESOLVED="bearer"
+  fi
+fi
+
+if [[ "$AWS_AUTH_MODE_RESOLVED" == "accessKey" && ( -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ) ]]; then
+  if ! command -v aws >/dev/null 2>&1; then
+    echo "ERROR: aws CLI is required to export profile/session credentials for aws.auth.mode=accessKey." >&2
+    exit 1
+  fi
+  PROFILE_ARGS=()
+  if [[ -n "${AWS_PROFILE:-${AWS_DEFAULT_PROFILE:-}}" ]]; then
+    PROFILE_ARGS=(--profile "${AWS_PROFILE:-${AWS_DEFAULT_PROFILE:-}}")
+  fi
+  eval "$(aws configure export-credentials --format env-no-export "${PROFILE_ARGS[@]}")"
+  export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+fi
+
+LLM_PROVIDER_RESOLVED="${LLM_PROVIDER:-}"
+if [[ -z "$LLM_PROVIDER_RESOLVED" ]]; then
+  if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+    LLM_PROVIDER_RESOLVED="anthropic"
+  else
+    LLM_PROVIDER_RESOLVED="bedrock"
+  fi
 fi
 
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || \
@@ -32,18 +71,23 @@ ARGS=(
   --create-namespace
   --set "fullnameOverride=rag"
   --set "image.tag=${TAG}"
-  --set "aws.auth.mode=${AWS_AUTH_MODE:-bearer}"
+  --set "aws.auth.mode=${AWS_AUTH_MODE_RESOLVED}"
   --set-string "aws.auth.bearerToken=${AWS_BEARER_TOKEN_BEDROCK:-}"
   --set-string "aws.auth.accessKeyId=${AWS_ACCESS_KEY_ID:-}"
   --set-string "aws.auth.secretAccessKey=${AWS_SECRET_ACCESS_KEY:-}"
+  --set-string "aws.auth.sessionToken=${AWS_SESSION_TOKEN:-}"
   --set "bedrock.region=${AWS_REGION:-us-east-1}"
-  --set-string "bedrock.embeddingModelId=${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}"
+  --set-string "bedrock.connectionSecretName=${BEDROCK_CONNECTION_SECRET_NAME:-}"
+  --set-string "bedrock.roleArn=${BEDROCK_ROLE_ARN:-}"
+  --set-string "bedrock.embeddingModelId=${EMBEDDING_MODEL:-${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}}"
+  --set-string "bedrock.embeddingBearerToken=${AWS_BEARER_TOKEN_BEDROCK:-}"
+  --set-string "bedrock.anthropicModelId=${ANTHROPIC_MODEL:-anthropic.claude-3-5-sonnet-20241022-v2:0}"
   --set "bedrock.embeddingDimensions=${BEDROCK_EMBEDDING_DIMENSIONS:-1024}"
+  --set-string "anthropic.apiKey=${ANTHROPIC_API_KEY:-}"
+  --set-string "anthropic.model=${ANTHROPIC_DIRECT_MODEL:-claude-sonnet-4-5}"
   --set-string "govinfo.apiKey=${GOVINFO_API_KEY:-}"
   --set-string "govinfo.baseUrl=${GOVINFO_BASE_URL:-https://api.govinfo.gov}"
-  --set-string "anthropic.apiKey=${ANTHROPIC_API_KEY:-}"
-  --set "anthropic.model=${ANTHROPIC_MODEL:-claude-sonnet-4-5}"
-  --set "qa.llmProvider=${LLM_PROVIDER:-anthropic}"
+  --set "qa.llmProvider=${LLM_PROVIDER_RESOLVED}"
   --set "qa.ollamaBaseUrl=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
   --set "qa.ollamaModel=${OLLAMA_MODEL:-llama3.1:8b}"
   --set-string "vectorizer.env.LOG_LEVEL=${LOG_LEVEL:-DEBUG}"
@@ -58,7 +102,7 @@ if [[ -n "$VALUES_FILE" ]]; then
   ARGS+=(-f "$VALUES_FILE")
 fi
 
-echo "helm ${ARGS[*]}"
+echo "helm upgrade --install $RELEASE <chart> --namespace $NAMESPACE --set image.tag=${TAG} --wait --timeout 5m"
 helm "${ARGS[@]}"
 
 cat <<EOF

@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import pytest
 
-from rag_core.settings import AwsBedrockSettings, _parse_embedding_model_id
+from rag_core.settings import (
+    AwsBedrockSettings,
+    BedrockConnectionSettings,
+    _parse_embedding_model_id,
+)
 
 
 @pytest.mark.parametrize(
@@ -45,6 +49,7 @@ def test_aws_bedrock_settings_exposes_parsed_name_and_version() -> None:
     """The properties on ``AwsBedrockSettings`` flow through the parser."""
     settings = AwsBedrockSettings(
         BEDROCK_EMBEDDING_MODEL_ID="amazon.titan-embed-text-v2:0",
+        _env_file=None,
     )
     assert settings.embedding_model_name == "amazon.titan-embed-text"
     assert settings.embedding_model_version == "2.0"
@@ -53,6 +58,37 @@ def test_aws_bedrock_settings_exposes_parsed_name_and_version() -> None:
 def test_aws_bedrock_settings_handles_missing_revision() -> None:
     settings = AwsBedrockSettings(
         BEDROCK_EMBEDDING_MODEL_ID="amazon.titan-embed-text-v2",
+        _env_file=None,
     )
     assert settings.embedding_model_name == "amazon.titan-embed-text"
     assert settings.embedding_model_version == "2"
+
+
+def test_bedrock_connection_settings_parses_reference_secret() -> None:
+    settings = BedrockConnectionSettings.from_secret(
+        (
+            '{"Region":"us-east-1","ModelId":"us.anthropic.claude-3-7-sonnet-20250219-v1:0",'
+            '"EmbeddingModelId":"amazon.titan-embed-text-v2:0","MaxTokens":512,'
+            '"Temperature":0.2,"ApplicationName":"RagPgvector","TimeoutSeconds":15}'
+        )
+    )
+
+    assert settings.region == "us-east-1"
+    assert settings.model_id == "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+    assert settings.embedding_model_id == "amazon.titan-embed-text-v2:0"
+    assert settings.max_tokens == 512
+    assert settings.temperature == 0.2
+    assert settings.application_name == "RagPgvector"
+    assert settings.timeout_seconds == 15
+
+
+def test_aws_bedrock_settings_supports_approved_model_aliases() -> None:
+    settings = AwsBedrockSettings(
+        EMBEDDING_MODEL="approved-embedding-profile",
+        ANTHROPIC_MODEL="approved-claude-profile",
+        _env_file=None,
+    )
+
+    assert settings.embedding_model_id == "approved-embedding-profile"
+    assert settings.chat_model_id == "approved-claude-profile"
+    assert settings.local_connection().model_id == "approved-claude-profile"

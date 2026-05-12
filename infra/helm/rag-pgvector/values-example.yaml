@@ -3,20 +3,26 @@
 
 aws:
   auth:
-    mode: bearer
-    bearerToken: "REPLACE_WITH_AWS_BEARER_TOKEN_BEDROCK"
+    mode: accessKey
+    accessKeyId: "REPLACE_WITH_AWS_ACCESS_KEY_ID"
+    secretAccessKey: "REPLACE_WITH_AWS_SECRET_ACCESS_KEY"
+    sessionToken: "REPLACE_WITH_AWS_SESSION_TOKEN_IF_USING_TEMPORARY_CREDENTIALS"
 
 bedrock:
   region: us-east-1
+  connectionSecretName: "rag-bedrock-config-dev"
+  roleArn: "arn:aws:iam::123456789012:role/BedrockInvokeRole"
   embeddingModelId: amazon.titan-embed-text-v2:0
+  embeddingBearerToken: "REPLACE_WITH_EMBEDDING_ACCOUNT_BEDROCK_API_KEY"
+  anthropicModelId: anthropic.claude-3-5-sonnet-20241022-v2:0
   embeddingDimensions: 1024
+
+anthropic:
+  apiKey: "REPLACE_WITH_DIRECT_ANTHROPIC_API_KEY"
+  model: claude-sonnet-4-5
 
 govinfo:
   apiKey: "REPLACE_WITH_GOVINFO_API_KEY"
-
-anthropic:
-  apiKey: "REPLACE_WITH_ANTHROPIC_API_KEY"
-  model: claude-sonnet-4-5
 
 qa:
   llmProvider: anthropic
