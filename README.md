@@ -204,6 +204,16 @@ bash scripts/helm-install.sh
 bash scripts/port-forward.sh
 ```
 
+**Windows (PowerShell):** Equivalent automation lives under [`scripts/ps/`](scripts/ps/). From the repo root:
+
+```powershell
+.\scripts\ps\Rag.ps1 docker-up
+.\scripts\ps\Rag.ps1 helm-install
+.\scripts\ps\Rag.ps1 port-forward
+```
+
+You can run individual scripts (for example `.\scripts\ps\Helm-Install.ps1`) or use `.\scripts\ps\Rag.ps1 help` for command aliases. `Ingest-Package.ps1` and `Ask.ps1` expect [`jq`](https://jqlang.github.io/jq/) on `PATH`.
+
 Then:
 
 ```bash
