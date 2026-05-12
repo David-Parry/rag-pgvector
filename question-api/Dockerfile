@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # Multi-stage build for the question-api pod.
 # Build context MUST be the monorepo root.
 #
@@ -13,6 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.7 /uv /usr/local/bin/uv
@@ -27,7 +29,18 @@ COPY vectorizer/src vectorizer/src
 COPY question-api/pyproject.toml question-api/README.md question-api/
 COPY question-api/src question-api/src
 
-RUN uv sync --package question-api --frozen --no-dev
+RUN --mount=type=secret,id=custom_ca,dst=/tmp/custom-ca.crt,required=false \
+    apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates \
+ && if [ -f /tmp/custom-ca.crt ]; then \
+      cp /tmp/custom-ca.crt /usr/local/share/ca-certificates/custom-ca.crt; \
+    fi \
+ && update-ca-certificates \
+ && if [ -f /tmp/custom-ca.crt ]; then \
+      cat /tmp/custom-ca.crt >> /etc/ssl/certs/ca-certificates.crt; \
+    fi \
+ && rm -rf /var/lib/apt/lists/* \
+ && uv sync --package question-api --frozen --no-dev
 
 # ----- Stage 2: runtime -------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime

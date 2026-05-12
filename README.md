@@ -156,7 +156,6 @@ $EDITOR .env
 | `AWS_REGION` | Region the Bedrock key was generated in | always |
 | `BEDROCK_EMBEDDING_MODEL_ID` | `amazon.titan-embed-text-v2:0` | always |
 | `BEDROCK_EMBEDDING_DIMENSIONS` | `1024` | always |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Optional fallback IAM keys | only if `aws.auth.mode=accessKey` |
 | `ANTHROPIC_API_KEY` | Anthropic key for Claude Sonnet 4.5 | when `LLM_PROVIDER=anthropic` (default) |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-5` | always |
 | `LLM_PROVIDER` | `anthropic` (default) or `ollama` | always |
@@ -168,7 +167,7 @@ $EDITOR .env
 
 ## AWS Bedrock authentication
 
-Three modes are wired end-to-end through both the Python settings layer and the Helm chart's `aws.auth.mode`:
+Two modes are wired end-to-end through both the Python settings layer and the Helm chart's `aws.auth.mode`:
 
 1. **Bearer token (default)** — generate a long-term Bedrock API key in the AWS console (`Amazon Bedrock → API keys → Generate long-term API key`) with a minimum-permission policy, e.g.:
 
@@ -185,9 +184,7 @@ Three modes are wired end-to-end through both the Python settings layer and the 
 
    Make sure `amazon.titan-embed-text-v2:0` is enabled under `Bedrock → Model access`. Put the key in `AWS_BEARER_TOKEN_BEDROCK`. `langchain-aws` (>=0.2.28) reads this env var automatically — no boto3 session is needed.
 
-2. **Long-lived IAM access keys** — set `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` and pass `--set aws.auth.mode=accessKey` to Helm.
-
-3. **IRSA** (real EKS only) — pass `--set aws.auth.mode=irsa --set aws.auth.irsaRoleArn=arn:aws:iam::...:role/...`. The chart annotates the ServiceAccount with `eks.amazonaws.com/role-arn` and renders no AWS keys into the Secret.
+2. **IRSA** (real EKS only) — pass `--set aws.auth.mode=irsa --set aws.auth.irsaRoleArn=arn:aws:iam::...:role/...`. The chart annotates the ServiceAccount with `eks.amazonaws.com/role-arn` and renders no AWS keys into the Secret.
 
 Bedrock API keys are **region-locked**. The bearer-token path also pollutes the process env at startup (a known `langchain-aws` quirk, harmless for our single-tenant pods).
 

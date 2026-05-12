@@ -12,6 +12,7 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-rag}"
 TAG="${TAG:-0.1.0}"
 KUBE_CONTEXT="${KUBE_CONTEXT:-docker-desktop}"
+CUSTOM_CA_CERT="${CUSTOM_CA_CERT:-}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
@@ -23,6 +24,16 @@ fi
 if ! command -v kubectl >/dev/null 2>&1; then
   echo "ERROR: kubectl is not installed. Install with: brew install kubectl" >&2
   exit 1
+fi
+
+SERVICE_BUILD_ARGS=()
+if [[ -n "$CUSTOM_CA_CERT" ]]; then
+  if [[ ! -f "$CUSTOM_CA_CERT" ]]; then
+    echo "ERROR: CUSTOM_CA_CERT does not point to a readable file: $CUSTOM_CA_CERT" >&2
+    exit 1
+  fi
+  export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+  SERVICE_BUILD_ARGS+=(--secret "id=custom_ca,src=${CUSTOM_CA_CERT}")
 fi
 
 echo "Checking Docker Desktop Kubernetes context..."
@@ -54,11 +65,11 @@ docker build -t "rag-pgvector/postgres:17" "$ROOT_DIR/infra/docker/postgres-pgve
 
 echo
 echo "Building rag-pgvector/vectorizer:${TAG} ..."
-docker build -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
+docker build "${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
 
 echo
 echo "Building rag-pgvector/question-api:${TAG} ..."
-docker build -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
+docker build "${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
 
 cat <<EOF
 
