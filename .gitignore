@@ -59,3 +59,5 @@ kubeconfig
 # Logs
 *.log
 logs/
+
+uv-default-index.txt

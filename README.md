@@ -212,7 +212,7 @@ bash scripts/port-forward.sh
 .\scripts\ps\Rag.ps1 port-forward
 ```
 
-You can run individual scripts (for example `.\scripts\ps\Helm-Install.ps1`) or use `.\scripts\ps\Rag.ps1 help` for command aliases. `Ingest-Package.ps1` and `Ask.ps1` expect [`jq`](https://jqlang.github.io/jq/) on `PATH`.
+You can run individual scripts (for example `.\scripts\ps\Helm-Install.ps1`) or use `.\scripts\ps\Rag.ps1 help` for command aliases. Prerequisites on PATH include **`kubectl`**, **`helm`**, and (for ingest/ask) [`jq`](https://jqlang.github.io/jq/). Install Helm on Windows with e.g. `winget install Helm.Helm` ([install docs](https://helm.sh/docs/intro/install/)).
 
 Then:
 
@@ -323,6 +323,8 @@ uv sync --all-packages
 uv run uvicorn vectorizer.main:app    --reload --port 8001
 uv run uvicorn question_api.main:app  --reload --port 8002
 ```
+
+If you are on a network that blocks or MITMs public PyPI, use an internal mirror (for example JFrog) for both host `uv sync` and image builds. Image builds: `documentation/DOCKER_PYPI_MIRROR.md`.
 
 ## Using Ollama (on the host, not in the cluster)
 

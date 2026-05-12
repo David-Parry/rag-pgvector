@@ -46,7 +46,13 @@ function Test-RagCommand {
         [string]$Name,
         [string]$InstallHint = ''
     )
-    $cmd = Get-Command $Name -ErrorAction SilentlyContinue
+    $cmd = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue
+    if (-not $cmd -and $env:OS -match 'Windows' -and $Name -notmatch '\.') {
+        $cmd = Get-Command "${Name}.exe" -CommandType Application -ErrorAction SilentlyContinue
+    }
+    if (-not $cmd) {
+        $cmd = Get-Command $Name -ErrorAction SilentlyContinue
+    }
     if (-not $cmd) {
         Write-Error "ERROR: '$Name' is not on PATH. $InstallHint"
         exit 1

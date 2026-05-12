@@ -18,7 +18,7 @@ Set-Location $ROOT_DIR
 $envPath = Join-Path $ROOT_DIR '.env'
 Import-RagDotEnv -Path $envPath
 
-Test-RagCommand helm 'Install Helm (winget install Helm.Helm).'
+Test-RagCommand helm 'Install Helm, then open a new PowerShell window: winget install Helm.Helm, or choco install kubernetes-helm, or see https://helm.sh/docs/intro/install/'
 
 if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0) {
     kubectl create namespace $NAMESPACE

@@ -55,17 +55,32 @@ if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0)
     }
 }
 
+# Optional corporate PyPI / TLS — see documentation/DOCKER_PYPI_MIRROR.md
+$pyAppBuildArgs = @()
+if ($env:RAG_DOCKER_UV_DEFAULT_INDEX) {
+    $pyAppBuildArgs += '--build-arg', "UV_DEFAULT_INDEX=$($env:RAG_DOCKER_UV_DEFAULT_INDEX)"
+}
+if ($env:RAG_UV_DEFAULT_INDEX_FILE) {
+    $pyAppBuildArgs += '--secret', "id=uv_default_index,src=$($env:RAG_UV_DEFAULT_INDEX_FILE)"
+}
+if ($env:RAG_DOCKER_NETRC_FILE) {
+    $pyAppBuildArgs += '--secret', "id=netrc,src=$($env:RAG_DOCKER_NETRC_FILE)"
+}
+if ($env:RAG_DOCKER_SSL_CERT_BUNDLE_FILE) {
+    $pyAppBuildArgs += '--secret', "id=ssl_cert_bundle,src=$($env:RAG_DOCKER_SSL_CERT_BUNDLE_FILE)"
+}
+
 Write-Host ''
 Write-Host 'Building rag-pgvector/postgres:17 ...'
 docker build -t 'rag-pgvector/postgres:17' (Join-Path $ROOT_DIR 'infra/docker/postgres-pgvector')
 
 Write-Host ''
 Write-Host "Building rag-pgvector/vectorizer:${TAG} ..."
-docker build -t "rag-pgvector/vectorizer:${TAG}" -f (Join-Path $ROOT_DIR 'vectorizer/Dockerfile') $ROOT_DIR
+docker build @pyAppBuildArgs -t "rag-pgvector/vectorizer:${TAG}" -f (Join-Path $ROOT_DIR 'vectorizer/Dockerfile') $ROOT_DIR
 
 Write-Host ''
 Write-Host "Building rag-pgvector/question-api:${TAG} ..."
-docker build -t "rag-pgvector/question-api:${TAG}" -f (Join-Path $ROOT_DIR 'question-api/Dockerfile') $ROOT_DIR
+docker build @pyAppBuildArgs -t "rag-pgvector/question-api:${TAG}" -f (Join-Path $ROOT_DIR 'question-api/Dockerfile') $ROOT_DIR
 
 Write-Host @"
 

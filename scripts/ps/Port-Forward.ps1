@@ -11,9 +11,9 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/_Common.ps1"
 
 $NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'rag' }
-$VECTORIZER_PORT = [int](if ($env:VECTORIZER_PORT) { $env:VECTORIZER_PORT } else { '8001' })
-$QA_PORT = [int](if ($env:QA_PORT) { $env:QA_PORT } else { '8002' })
-$POSTGRES_PORT = [int](if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { '5432' })
+$VECTORIZER_PORT = if ($env:VECTORIZER_PORT) { [int]$env:VECTORIZER_PORT } else { 8001 }
+$QA_PORT = if ($env:QA_PORT) { [int]$env:QA_PORT } else { 8002 }
+$POSTGRES_PORT = if ($env:POSTGRES_PORT) { [int]$env:POSTGRES_PORT } else { 5432 }
 $POSTGRES_SVC = if ($env:POSTGRES_SVC) { $env:POSTGRES_SVC } else { 'rag-postgres' }
 $KILL_STALE = if ($env:KILL_STALE) { $env:KILL_STALE } else { '0' }
 
