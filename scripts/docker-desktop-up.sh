@@ -25,6 +25,16 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
+SERVICE_BUILD_ARGS=()
+if [[ -n "$CUSTOM_CA_CERT" ]]; then
+  if [[ ! -f "$CUSTOM_CA_CERT" ]]; then
+    echo "ERROR: CUSTOM_CA_CERT does not point to a readable file: $CUSTOM_CA_CERT" >&2
+    exit 1
+  fi
+  export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+  SERVICE_BUILD_ARGS+=(--secret "id=custom_ca,src=${CUSTOM_CA_CERT}")
+fi
+
 echo "Checking Docker Desktop Kubernetes context..."
 if ! kubectl config get-contexts -o name | grep -qx "$KUBE_CONTEXT"; then
   cat <<EOF >&2
@@ -48,32 +58,17 @@ fi
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || \
   kubectl create namespace "$NAMESPACE"
 
-# Optional corporate PyPI / TLS — see documentation/DOCKER_PYPI_MIRROR.md
-PY_APP_BUILD_ARGS=()
-if [ -n "${RAG_DOCKER_UV_DEFAULT_INDEX:-}" ]; then
-  PY_APP_BUILD_ARGS+=(--build-arg "UV_DEFAULT_INDEX=${RAG_DOCKER_UV_DEFAULT_INDEX}")
-fi
-if [ -n "${RAG_UV_DEFAULT_INDEX_FILE:-}" ]; then
-  PY_APP_BUILD_ARGS+=(--secret "id=uv_default_index,src=${RAG_UV_DEFAULT_INDEX_FILE}")
-fi
-if [ -n "${RAG_DOCKER_NETRC_FILE:-}" ]; then
-  PY_APP_BUILD_ARGS+=(--secret "id=netrc,src=${RAG_DOCKER_NETRC_FILE}")
-fi
-if [ -n "${RAG_DOCKER_SSL_CERT_BUNDLE_FILE:-}" ]; then
-  PY_APP_BUILD_ARGS+=(--secret "id=ssl_cert_bundle,src=${RAG_DOCKER_SSL_CERT_BUNDLE_FILE}")
-fi
-
 echo
 echo "Building rag-pgvector/postgres:17 ..."
 docker build -t "rag-pgvector/postgres:17" "$ROOT_DIR/infra/docker/postgres-pgvector"
 
 echo
 echo "Building rag-pgvector/vectorizer:${TAG} ..."
-docker build "${PY_APP_BUILD_ARGS[@]}" -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
+docker build "${PY_APP_BUILD_ARGS[@]} ${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
 
 echo
 echo "Building rag-pgvector/question-api:${TAG} ..."
-docker build "${PY_APP_BUILD_ARGS[@]}" -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
+docker build "${PY_APP_BUILD_ARGS[@]} ${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
 
 cat <<EOF
 

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Multi-stage build for the question-api pod.
 # Build context MUST be the monorepo root.
 #
@@ -19,6 +18,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
 COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv

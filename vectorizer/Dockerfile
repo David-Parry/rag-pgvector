@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Multi-stage build for the vectorizer pod.
 # Build context MUST be the monorepo root because vectorizer depends on the
 # rag-core workspace member.
@@ -21,6 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
 # 0.5.x mishandles some Artifactory URL joins; 0.9.x+ improves index auth and PyPI compat.

@@ -183,16 +183,6 @@ bash scripts/helm-install.sh
 bash scripts/port-forward.sh
 ```
 
-**Windows (PowerShell):** Equivalent automation lives under [`scripts/ps/`](scripts/ps/). From the repo root:
-
-```powershell
-.\scripts\ps\Rag.ps1 docker-up
-.\scripts\ps\Rag.ps1 helm-install
-.\scripts\ps\Rag.ps1 port-forward
-```
-
-You can run individual scripts (for example `.\scripts\ps\Helm-Install.ps1`) or use `.\scripts\ps\Rag.ps1 help` for command aliases. Prerequisites on PATH include **`kubectl`**, **`helm`**, and (for Bedrock helper scripts) [`jq`](https://jqlang.github.io/jq/). `.\scripts\ps\Ask.ps1` and `.\scripts\ps\Ingest-Package.ps1` use native PowerShell JSON handling and do not require `jq`. Install Helm on Windows with e.g. `winget install Helm.Helm` ([install docs](https://helm.sh/docs/intro/install/)).
-
 Then:
 
 ```bash
@@ -326,11 +316,10 @@ rag-pgvector/
 ├── docker-compose.yml          # postgres-only convenience for non-pod dev
 ├── vectorizer/                 # service:  ingest + embed + upsert
 ├── question-api/               # service: retrieve + ground + generate
-├── evals/                      # DeepEval retriever benchmark
 ├── libs/rag-core/              # shared Protocols, prompts, chunker, settings
 ├── infra/
 │   ├── docker/postgres-pgvector/   # FROM postgres:17 + apt postgresql-17-pgvector
-│   └── helm/rag-pgvector/          # umbrella chart (3 pods, no Ingress)
+│   └── helm/rag-pgvector/          # umbrella chart (3 pods, no Ollama, no Ingress)
 ├── scripts/                    # docker-desktop-up, helm-install, port-forward, seed-ingest
 └── tests/                      # repo-level tests (helm lint + helm template)
 ```
