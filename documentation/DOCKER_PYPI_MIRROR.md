@@ -105,3 +105,9 @@ The same environment variables uv documents apply outside Docker: `UV_DEFAULT_IN
 | `RAG_DOCKER_UV_DEFAULT_INDEX` | Pass-through to `--build-arg UV_DEFAULT_INDEX` (avoid for secrets). |
 
 Replace `<repo>` and hostnames with values from your Artifactory PyPI virtual repository configuration.
+
+## Build backend (`hatchling` / `uv_build`)
+
+Workspace packages in this repository declare `[build-system]` with **Astral `uv_build`**, not Hatchling. The `uv` used in Docker (`ghcr.io/astral-sh/uv`) embeds a compatible `uv_build`, so the builder typically does **not** need to download a separate build-backend wheel from your mirror.
+
+If you still see resolution errors for a third-party build backend on an older branch, either ensure your virtual repository proxies upstream PyPI for build dependencies, or set an additional index (for example `UV_EXTRA_INDEX_URL`) per [uv package indexes](https://docs.astral.sh/uv/concepts/indexes/) if your security policy allows it.

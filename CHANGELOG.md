@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `scripts/ps/Helm-Install.ps1`: when `aws configure export-credentials` fails (for example no SSO session), print remediation steps instead of exiting with only the CLI error text.
+
 - `rag-core`: parse DeepEval grid settings from comma-separated environment values before pydantic-settings attempts JSON decoding; pytest now configures repo source and test-helper paths without requiring a manual `PYTHONPATH`.
 
 - Tests: isolate the Anthropic missing-key unit test from real shell credentials and run eval integration tests with a psycopg-compatible selector event loop on Windows.
@@ -75,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/ps/env_var_artifactory.ps1`: resolve the repo `.env` from the project root, create `RAG_UV_DEFAULT_INDEX_FILE` from the configured Artifactory `pip.ini` index when needed, and invoke `Docker-Desktop-Up.ps1` directly so Docker builds receive the PyPI mirror secret.
 
-- Docker builder: `UV_DEFAULT_INDEX` no longer left installs pulling wheels from `files.pythonhosted.org` — the builder rewrites `uv.lock` PyPI URLs to match the Artifactory (PEP 503) mirror when a default index is supplied (`scripts/docker/rewrite_uv_lock_for_mirror.py`). When the index URL embeds `user:token@`, `scripts/docker/prepare_artifactory_for_uv.py` merges them into `/root/.netrc` and strips userinfo from `UV_DEFAULT_INDEX` so artifact downloads authenticate. Builder images use `ghcr.io/astral-sh/uv:0.9.17` (was 0.5.7). Mirror builds default `UV_CONCURRENT_DOWNLOADS=2`. Builder shell trace (`set -x`) was removed so credentials in the index URL are less likely to appear in build logs.
+- Docker builder: `UV_DEFAULT_INDEX` no longer left installs pulling wheels from `files.pythonhosted.org` — the builder rewrites `uv.lock` PyPI URLs to match the Artifactory (PEP 503) mirror when a default index is supplied (`scripts/docker/rewrite_uv_lock_for_mirror.py`). When the index URL embeds `user:token@`, `scripts/docker/prepare_artifactory_for_uv.py` merges them into `/root/.netrc` and strips userinfo from `UV_DEFAULT_INDEX` so artifact downloads authenticate. Builder images use `ghcr.io/astral-sh/uv:0.11.14` (was 0.5.7, then 0.9.17). Mirror builds default `UV_CONCURRENT_DOWNLOADS=2`. Builder shell trace (`set -x`) was removed so credentials in the index URL are less likely to appear in build logs.
 
 - `vectorizer/Dockerfile`: header line used a hyphen instead of a comment; Docker treated it as an unknown instruction (`unknown instruction: -`).
 
@@ -84,6 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/docker/rewrite_uv_lock_for_mirror.py`: fix Artifactory wheel URL path. JFrog Artifactory simple API is at `/api/pypi/<repo>/simple` but actual wheel files are served from `/<repo>/packages/...` (without the `/api/pypi/` prefix). The rewrite now strips `/api/pypi/` when present to generate correct file URLs.
 
 ### Changed
+
+- Workspace members (`libs/rag-core`, `vectorizer`, `question-api`, `evals`) use the Astral `uv_build` PEP 517 backend instead of `hatchling`; the `uv` binary supplies a compatible build implementation so image builds do not need `hatchling` on the PyPI mirror. `vectorizer/Dockerfile` and `question-api/Dockerfile` copy `ghcr.io/astral-sh/uv:0.11.14` (replacing `0.9.17`).
 
 - `evals`: expanded and grounded the `BILLS-115hr1625enr` benchmark goldens in the official govinfo PDF text, with 50 questions covering sections 7036-7041, UNRWA provisions, and sections 1002-1007.
 

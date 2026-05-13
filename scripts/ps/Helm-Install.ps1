@@ -94,6 +94,20 @@ if ($awsAuthMode -eq 'accessKey' -and (-not $env:AWS_ACCESS_KEY_ID -or -not $env
     }
     $exported = & aws @exportArgs
     if ($LASTEXITCODE -ne 0) {
+        Write-Host @"
+
+AWS CLI could not export credentials (typical message: 'Unable to retrieve credentials: no credentials found').
+Command: aws $($exportArgs -join ' ')
+
+Fix one of:
+  1. SSO: aws sso login --profile <name>   then set `$env:AWS_PROFILE` (or AWS_DEFAULT_PROFILE) and re-run.
+  2. Keys: set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY (and AWS_SESSION_TOKEN if required) in .env or this session.
+  3. Bearer: set AWS_BEARER_TOKEN_BEDROCK in .env (script uses aws.auth.mode=bearer).
+  4. No AWS for this cluster: `$env:RAG_INTERNAL_NETWORK = '1'   then re-run (aws.auth.mode=none).
+
+See README.md and .env.example.
+
+"@ -ForegroundColor Yellow
         exit $LASTEXITCODE
     }
     $credentials = $exported | ConvertFrom-Json

@@ -21,7 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
-COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /usr/local/bin/uv
 
 WORKDIR /workspace
 
