@@ -122,7 +122,7 @@ $env:DEEPEVAL_THRESHOLD_GRID = $effectiveThresholdGrid
 
 $timestamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ')
 $generatedAt = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
-$effectiveReportDir = if ($ReportDir) { $ReportDir } else { Get-RagEnvValue -Name 'DEEPEVAL_REPORT_DIR' -Default 'documentation/eval-reports' }
+$effectiveReportDir = if ($ReportDir) { $ReportDir } else { Get-RagEnvValue -Name 'DEEPEVAL_REPORT_DIR' -Default 'dist' }
 $effectiveReportFileType = if ($ReportFileType) {
     $ReportFileType
 }

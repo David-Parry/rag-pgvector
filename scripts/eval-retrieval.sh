@@ -7,9 +7,9 @@
 # Usage:
 #   ./scripts/eval-retrieval.sh
 #   PACKAGE_ID=BILLS-115hr1625enr TOP_K_GRID=3,6,8 THRESHOLD_GRID=0.4,0.6,0.8 ./scripts/eval-retrieval.sh
-#   DEEPEVAL_REPORT_PATH=documentation/eval-reports/latest.md ./scripts/eval-retrieval.sh
+#   DEEPEVAL_REPORT_PATH=dist/latest.md ./scripts/eval-retrieval.sh
 #   DEEPEVAL_REPORT_FILE_TYPE=html ./scripts/eval-retrieval.sh
-#   DEEPEVAL_LOG_PATH=documentation/eval-reports/latest.log ./scripts/eval-retrieval.sh
+#   DEEPEVAL_LOG_PATH=dist/latest.log ./scripts/eval-retrieval.sh
 #
 set -euo pipefail
 
@@ -70,7 +70,7 @@ PY
 
 timestamp="$(date -u +"%Y%m%dT%H%M%SZ")"
 generated_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-report_dir="${DEEPEVAL_REPORT_DIR:-documentation/eval-reports}"
+report_dir="${DEEPEVAL_REPORT_DIR:-dist}"
 safe_package_id="${PACKAGE_ID//[^A-Za-z0-9._-]/_}"
 if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
     report_extension="html"

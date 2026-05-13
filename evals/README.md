@@ -54,13 +54,13 @@ The script writes a previewable markdown summary with explicit `PASS` or `FAIL` 
 Override the report destination per run:
 
 ```bash
-DEEPEVAL_REPORT_PATH=documentation/eval-reports/latest.md ./scripts/eval-retrieval.sh
+DEEPEVAL_REPORT_PATH=dist/latest.md ./scripts/eval-retrieval.sh
 ```
 
 PowerShell also supports parameters:
 
 ```powershell
-.\scripts\ps\Eval-Retrieval.ps1 -TopKGrid '3,6,8' -ThresholdGrid '0.4,0.6,0.8' -ReportPath 'documentation/eval-reports/latest.md'
+.\scripts\ps\Eval-Retrieval.ps1 -TopKGrid '3,6,8' -ThresholdGrid '0.4,0.6,0.8' -ReportPath 'dist/latest.md'
 ```
 
 ## Tests

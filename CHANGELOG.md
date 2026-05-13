@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
 
-- `scripts/eval-retrieval.sh` now writes a timestamped markdown report under `documentation/eval-reports/` while still printing benchmark output to the terminal.
+- `scripts/eval-retrieval.sh` now writes a timestamped markdown report under root-level `dist/` while still printing benchmark output to the terminal.
 
 - `scripts/ps/Eval-Retrieval.ps1` PowerShell runner for the DeepEval retriever benchmark report, available through `scripts/ps/Rag.ps1 eval-retrieval`.
 
@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - DeepEval report runners support `DEEPEVAL_REPORT_FILE_TYPE=html` for generated HTML summary reports.
 
-- Generated DeepEval report files under `documentation/eval-reports/` are ignored to avoid accidentally committing SDK request metadata.
+- Generated DeepEval report files under root-level `dist/` are ignored to avoid accidentally committing SDK request metadata.
 
 - `.gitattributes` keeps shell scripts checked out with LF line endings so bash runners work consistently on Windows.
 
