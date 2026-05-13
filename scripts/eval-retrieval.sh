@@ -7,8 +7,8 @@
 # Usage:
 #   ./scripts/eval-retrieval.sh
 #   PACKAGE_ID=BILLS-115hr1625enr TOP_K_GRID=3,6,8 THRESHOLD_GRID=0.4,0.6,0.8 ./scripts/eval-retrieval.sh
-#   DEEPEVAL_REPORT_PATH=dist/latest.md ./scripts/eval-retrieval.sh
-#   DEEPEVAL_REPORT_FILE_TYPE=html ./scripts/eval-retrieval.sh
+#   DEEPEVAL_REPORT_PATH=dist/latest.html ./scripts/eval-retrieval.sh
+#   DEEPEVAL_REPORT_FILE_TYPE=markdown ./scripts/eval-retrieval.sh
 #   DEEPEVAL_LOG_PATH=dist/latest.log ./scripts/eval-retrieval.sh
 #
 set -euo pipefail
@@ -16,7 +16,7 @@ set -euo pipefail
 export PACKAGE_ID="${PACKAGE_ID:-BILLS-115hr1625enr}"
 export DEEPEVAL_TOP_K_GRID="${TOP_K_GRID:-${DEEPEVAL_TOP_K_GRID:-3,5,8}}"
 export DEEPEVAL_THRESHOLD_GRID="${THRESHOLD_GRID:-${DEEPEVAL_THRESHOLD_GRID:-0.4,0.6,0.8}}"
-export DEEPEVAL_REPORT_FILE_TYPE="${DEEPEVAL_REPORT_FILE_TYPE:-markdown}"
+export DEEPEVAL_REPORT_FILE_TYPE="${DEEPEVAL_REPORT_FILE_TYPE:-html}"
 export LOG_LEVEL="${DEEPEVAL_LOG_LEVEL:-INFO}"
 DEEPEVAL_REPORT_FILE_TYPE="${DEEPEVAL_REPORT_FILE_TYPE,,}"
 
@@ -78,18 +78,18 @@ else
     report_extension="md"
 fi
 report_path="${DEEPEVAL_REPORT_PATH:-${report_dir}/deepeval-${safe_package_id}-${timestamp}.${report_extension}}"
-default_log_path="${report_path%.*}.log"
-log_path="${DEEPEVAL_LOG_PATH:-${default_log_path}}"
+log_path="${DEEPEVAL_LOG_PATH:-}"
 
 mkdir -p "$(dirname "$report_path")"
-mkdir -p "$(dirname "$log_path")"
-: > "$log_path"
+if [[ -n "$log_path" ]]; then
+    mkdir -p "$(dirname "$log_path")"
+    : > "$log_path"
+fi
 
 if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
     package_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["PACKAGE_ID"]))')"
     top_k_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_TOP_K_GRID"]))')"
     threshold_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_THRESHOLD_GRID"]))')"
-    log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
     {
         echo '<!doctype html>'
         echo '<html lang="en">'
@@ -106,7 +106,10 @@ if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
         echo "  <li>Package ID: <code>${package_html}</code></li>"
         echo "  <li>Top-k grid: <code>${top_k_html}</code></li>"
         echo "  <li>Threshold grid: <code>${threshold_html}</code></li>"
-        echo "  <li>Progress log: <code>${log_path_html}</code></li>"
+        if [[ -n "$log_path" ]]; then
+            log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
+            echo "  <li>Progress log: <code>${log_path_html}</code></li>"
+        fi
         echo '</ul>'
     } | tee "$report_path"
 else
@@ -117,18 +120,33 @@ else
         echo "- Package ID: ${PACKAGE_ID}"
         echo "- Top-k grid: ${DEEPEVAL_TOP_K_GRID}"
         echo "- Threshold grid: ${DEEPEVAL_THRESHOLD_GRID}"
-        echo "- Progress log: ${log_path}"
+        if [[ -n "$log_path" ]]; then
+            echo "- Progress log: ${log_path}"
+        fi
         echo
     } | tee "$report_path"
 fi
 
-if uv run python -m rag_evals.cli 2> >(tee "$log_path" >&2) | tee -a "$report_path"; then
+run_eval() {
+    if [[ -n "$log_path" ]]; then
+        echo "DeepEval progress log is being written to ${log_path}" >&2
+        uv run python -m rag_evals.cli 2> >(tee "$log_path" >&2) | tee -a "$report_path"
+    else
+        uv run python -m rag_evals.cli | tee -a "$report_path"
+    fi
+}
+
+if run_eval; then
     true
 else
     exit_code=$?
     if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
-        log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
-        echo "<section><h2>Error</h2><p>The eval command failed. See the progress log for command output: <code>${log_path_html}</code></p></section>" | tee -a "$report_path" >&2
+        if [[ -n "$log_path" ]]; then
+            log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
+            echo "<section><h2>Error</h2><p>The eval command failed. See the progress log for command output: <code>${log_path_html}</code></p></section>" | tee -a "$report_path" >&2
+        else
+            echo '<section><h2>Error</h2><p>The eval command failed. See the terminal output for command details.</p></section>' | tee -a "$report_path" >&2
+        fi
         {
             echo '</main>'
             echo '</body>'
@@ -139,7 +157,11 @@ else
             echo
             echo "## Error"
             echo
-            echo "The eval command failed. See the progress log for command output: ${log_path}"
+            if [[ -n "$log_path" ]]; then
+                echo "The eval command failed. See the progress log for command output: ${log_path}"
+            else
+                echo "The eval command failed. See the terminal output for command details."
+            fi
         } | tee -a "$report_path" >&2
     fi
     exit "$exit_code"
@@ -154,4 +176,6 @@ if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
 fi
 
 echo "DeepEval report written to ${report_path}" >&2
-echo "DeepEval progress log written to ${log_path}" >&2
+if [[ -n "$log_path" ]]; then
+    echo "DeepEval progress log written to ${log_path}" >&2
+fi

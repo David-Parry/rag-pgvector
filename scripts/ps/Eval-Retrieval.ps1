@@ -1,7 +1,7 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-  Run the DeepEval pgvector retriever benchmark and write a markdown report.
+  Run the DeepEval pgvector retriever benchmark and write an HTML report.
 
 .NOTES
   This script expects the vector database environment to be running already.
@@ -20,7 +20,8 @@ param(
     [string]$ReportPath,
     [string]$ReportDir,
     [ValidateSet('markdown', 'html')]
-    [string]$ReportFileType
+    [string]$ReportFileType,
+    [string]$LogPath
 )
 
 Set-StrictMode -Version Latest
@@ -127,7 +128,7 @@ $effectiveReportFileType = if ($ReportFileType) {
     $ReportFileType
 }
 else {
-    Get-RagEnvValue -Name 'DEEPEVAL_REPORT_FILE_TYPE' -Default 'markdown'
+    Get-RagEnvValue -Name 'DEEPEVAL_REPORT_FILE_TYPE' -Default 'html'
 }
 $effectiveReportFileType = $effectiveReportFileType.ToLowerInvariant()
 if ($effectiveReportFileType -eq 'md') {
@@ -153,8 +154,16 @@ $reportFullPath = if ([System.IO.Path]::IsPathRooted($effectiveReportPath)) {
 else {
     Join-Path $repoRoot $effectiveReportPath
 }
-$effectiveLogPath = Get-RagEnvValue -Name 'DEEPEVAL_LOG_PATH' -Default ([System.IO.Path]::ChangeExtension($effectiveReportPath, '.log'))
-$logFullPath = if ([System.IO.Path]::IsPathRooted($effectiveLogPath)) {
+$effectiveLogPath = if ($LogPath) {
+    $LogPath
+}
+else {
+    Get-RagEnvValue -Name 'DEEPEVAL_LOG_PATH'
+}
+$logFullPath = if ([string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+    ''
+}
+elseif ([System.IO.Path]::IsPathRooted($effectiveLogPath)) {
     $effectiveLogPath
 }
 else {
@@ -164,17 +173,18 @@ $reportParent = Split-Path -Parent $reportFullPath
 if ($reportParent) {
     New-Item -ItemType Directory -Force -Path $reportParent | Out-Null
 }
-$logParent = Split-Path -Parent $logFullPath
-if ($logParent) {
-    New-Item -ItemType Directory -Force -Path $logParent | Out-Null
+if (-not [string]::IsNullOrWhiteSpace($logFullPath)) {
+    $logParent = Split-Path -Parent $logFullPath
+    if ($logParent) {
+        New-Item -ItemType Directory -Force -Path $logParent | Out-Null
+    }
 }
 
 $header = if ($effectiveReportFileType -eq 'html') {
     $htmlPackageId = [System.Net.WebUtility]::HtmlEncode($effectivePackageId)
     $htmlTopKGrid = [System.Net.WebUtility]::HtmlEncode($effectiveTopKGrid)
     $htmlThresholdGrid = [System.Net.WebUtility]::HtmlEncode($effectiveThresholdGrid)
-    $htmlLogPath = [System.Net.WebUtility]::HtmlEncode($effectiveLogPath)
-    @(
+    $items = @(
         '<!doctype html>'
         '<html lang="en">'
         '<head>'
@@ -190,25 +200,34 @@ $header = if ($effectiveReportFileType -eq 'html') {
         "  <li>Package ID: <code>$htmlPackageId</code></li>"
         "  <li>Top-k grid: <code>$htmlTopKGrid</code></li>"
         "  <li>Threshold grid: <code>$htmlThresholdGrid</code></li>"
-        "  <li>Progress log: <code>$htmlLogPath</code></li>"
-        '</ul>'
     )
+    if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+        $htmlLogPath = [System.Net.WebUtility]::HtmlEncode($effectiveLogPath)
+        $items += "  <li>Progress log: <code>$htmlLogPath</code></li>"
+    }
+    $items += '</ul>'
+    $items
 }
 else {
-    @(
+    $items = @(
         '# DeepEval Retriever Benchmark Report'
         ''
         "- Generated: $generatedAt"
         "- Package ID: $effectivePackageId"
         "- Top-k grid: $effectiveTopKGrid"
         "- Threshold grid: $effectiveThresholdGrid"
-        "- Progress log: $effectiveLogPath"
-        ''
     )
+    if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+        $items += "- Progress log: $effectiveLogPath"
+    }
+    $items += ''
+    $items
 }
 
 $header | Tee-Object -FilePath $reportFullPath | Out-Host
-Write-Host "DeepEval progress log is being written to $effectiveLogPath"
+if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+    Write-Host "DeepEval progress log is being written to $effectiveLogPath"
+}
 $oldErrorActionPreference = $ErrorActionPreference
 $oldNativeCommandPreference = $null
 $hasNativeCommandPreference = Test-Path -LiteralPath 'Variable:\PSNativeCommandUseErrorActionPreference'
@@ -218,18 +237,34 @@ if ($hasNativeCommandPreference) {
 }
 try {
     $ErrorActionPreference = 'Continue'
-    & uv run python -m rag_evals.cli 2> $logFullPath | Tee-Object -FilePath $reportFullPath -Append
+    if (-not [string]::IsNullOrWhiteSpace($logFullPath)) {
+        & uv run python -m rag_evals.cli 2> $logFullPath | Tee-Object -FilePath $reportFullPath -Append
+    }
+    else {
+        & uv run python -m rag_evals.cli | Tee-Object -FilePath $reportFullPath -Append
+    }
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         if ($effectiveReportFileType -eq 'html') {
-            "<section><h2>Error</h2><p>The eval command failed. See the progress log for command output: <code>$([System.Net.WebUtility]::HtmlEncode($effectiveLogPath))</code></p></section>" | Tee-Object -FilePath $reportFullPath -Append | Out-Host
+            if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+                "<section><h2>Error</h2><p>The eval command failed. See the progress log for command output: <code>$([System.Net.WebUtility]::HtmlEncode($effectiveLogPath))</code></p></section>" | Tee-Object -FilePath $reportFullPath -Append | Out-Host
+            }
+            else {
+                '<section><h2>Error</h2><p>The eval command failed. See the terminal output for command details.</p></section>' | Tee-Object -FilePath $reportFullPath -Append | Out-Host
+            }
         }
         else {
+            $errorDetail = if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+                "The eval command failed. See the progress log for command output: $effectiveLogPath"
+            }
+            else {
+                'The eval command failed. See the terminal output for command details.'
+            }
             @(
                 ''
                 '## Error'
                 ''
-                "The eval command failed. See the progress log for command output: $effectiveLogPath"
+                $errorDetail
             ) | Tee-Object -FilePath $reportFullPath -Append | Out-Host
         }
     }
@@ -250,5 +285,7 @@ if ($effectiveReportFileType -eq 'html') {
 }
 
 Write-Host "DeepEval report written to $effectiveReportPath"
-Write-Host "DeepEval progress log written to $effectiveLogPath"
+if (-not [string]::IsNullOrWhiteSpace($effectiveLogPath)) {
+    Write-Host "DeepEval progress log written to $effectiveLogPath"
+}
 exit $exitCode

@@ -107,10 +107,10 @@ def test_deepeval_settings_reads_verbose_mode() -> None:
     assert settings.verbose_mode is True
 
 
-def test_deepeval_settings_report_file_type_defaults_to_markdown() -> None:
+def test_deepeval_settings_report_file_type_defaults_to_html() -> None:
     settings = DeepEvalSettings(_env_file=None)
 
-    assert settings.report_file_type == "markdown"
+    assert settings.report_file_type == "html"
 
 
 def test_deepeval_settings_reads_html_report_file_type() -> None:

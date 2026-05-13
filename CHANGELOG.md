@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
 
-- `scripts/eval-retrieval.sh` now writes a timestamped markdown report under root-level `dist/` while still printing benchmark output to the terminal.
+- `scripts/eval-retrieval.sh` now writes a timestamped HTML report under root-level `dist/` while still printing benchmark output to the terminal.
 
 - `scripts/ps/Eval-Retrieval.ps1` PowerShell runner for the DeepEval retriever benchmark report, available through `scripts/ps/Rag.ps1 eval-retrieval`.
 
@@ -21,15 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - DeepEval report runners now load `ANTHROPIC_API_KEY` from `ANTHROPIC_API_KEY_FILE` or `claudeapi.txt` when the environment variable is not set.
 
-- DeepEval report runners default to `INFO` logging via `DEEPEVAL_LOG_LEVEL` and keep stderr debug output out of successful markdown reports.
+- DeepEval report runners default to `INFO` logging via `DEEPEVAL_LOG_LEVEL` and keep stderr debug output out of successful reports.
 
 - DeepEval reports now include configurable pass/fail gates and a summary section for multi-threshold retrieval sweeps.
 
-- DeepEval report runners now write progress and third-party SDK output to a companion `.log` file so generated markdown reports remain previewable.
+- DeepEval report runners now create companion `.log` files only when `DEEPEVAL_LOG_PATH` or PowerShell `-LogPath` is provided.
 
 - `DEEPEVAL_VERBOSE_MODE` now controls DeepEval metric display verbosity and defaults off for clean report runs.
 
-- DeepEval report runners support `DEEPEVAL_REPORT_FILE_TYPE=html` for generated HTML summary reports.
+- DeepEval report runners support `DEEPEVAL_REPORT_FILE_TYPE=markdown` for generated markdown summary reports.
 
 - Generated DeepEval report files under root-level `dist/` are ignored to avoid accidentally committing SDK request metadata.
 

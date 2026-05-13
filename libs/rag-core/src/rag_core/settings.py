@@ -124,7 +124,7 @@ class DeepEvalSettings(_BaseEnvSettings):
     )
     verbose_mode: bool = Field(default=False, alias="DEEPEVAL_VERBOSE_MODE")
     report_file_type: Literal["markdown", "html"] = Field(
-        default="markdown",
+        default="html",
         alias="DEEPEVAL_REPORT_FILE_TYPE",
     )
 
