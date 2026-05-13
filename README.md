@@ -155,6 +155,7 @@ $EDITOR .env
 | `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` | Optional local AWS profile that Helm can export into temporary pod credentials for embeddings | local Docker Desktop with `aws.auth.mode=accessKey` |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Optional local AWS credentials for embeddings | only if `aws.auth.mode=accessKey` |
 | `AWS_BEARER_TOKEN_BEDROCK` | Bedrock API key for the embedding account; embeddings use this old direct credential path | embeddings |
+| `RAG_INTERNAL_NETWORK` / `RAG_ON_PREM` | Set to `1` only for internal/on-prem installs that intentionally do not inject Bedrock embedding credentials | internal/on-prem only |
 | `GOVINFO_API_KEY` | Free key from <https://api.data.gov/signup/> | always |
 | `DATABASE_URL` | psycopg3 URL for pgvector | always |
 | `RETRIEVAL_TOP_K` / `RETRIEVAL_SCORE_THRESHOLD` | Defaults `5` / `0.25` | optional |
@@ -168,7 +169,7 @@ Direct Anthropic Claude is the question-answering path. Put the API key in `clau
 
 Embeddings use the existing Bedrock embedding path: `EMBEDDING_MODEL`, `BEDROCK_EMBEDDING_DIMENSIONS`, and `AWS_BEARER_TOKEN_BEDROCK` (or direct AWS keys if that is how the embedding account is configured). Anthropic does not provide embeddings, so changing this requires selecting a replacement embedding provider.
 
-For local Helm deployments, use `aws.auth.mode=accessKey` only when the embedding account requires AWS keys. `scripts/helm-install.sh` and `scripts/ps/Helm-Install.ps1` can export these from `AWS_PROFILE` / `AWS_DEFAULT_PROFILE` with `aws configure export-credentials`, including `AWS_SESSION_TOKEN` for SSO or other temporary sessions. Set `bedrock.embeddingBearerToken` for bearer-token embedding access. For EKS, use `aws.auth.mode=irsa` and set `aws.auth.irsaRoleArn` to the embedding role.
+For local Helm deployments, `scripts/helm-install.sh` and `scripts/ps/Helm-Install.ps1` auto-select embedding auth. They use a real `AWS_BEARER_TOKEN_BEDROCK` when present, otherwise AWS keys/profile credentials when available. Outside the internal/on-prem network, missing embedding credentials fail fast instead of deploying an `/ask` endpoint that cannot embed questions. For internal/on-prem installs that intentionally provide embeddings another way, set `RAG_INTERNAL_NETWORK=1` (or `RAG_ON_PREM=1`) to allow `aws.auth.mode=none`. For EKS, use `aws.auth.mode=irsa` and set `aws.auth.irsaRoleArn` to the embedding role.
 
 ## Local pod workflow (default)
 

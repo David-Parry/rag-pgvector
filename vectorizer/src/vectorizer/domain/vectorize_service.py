@@ -30,6 +30,10 @@ from vectorizer.domain.models import (
 )
 
 
+class IngestPackageDownloadError(RuntimeError):
+    """A requested single-package ingest could not download its govinfo source."""
+
+
 class VectorizeService:
     """Pipeline: govinfo -> PyMuPDF -> splitter -> pgvector. Pure orchestration."""
 
@@ -118,12 +122,9 @@ class VectorizeService:
             pdf = await self._govinfo.download_pdf(package_id)
         except Exception as exc:
             log.warning("ingest_package.download_failed", error=str(exc))
-            return IngestResponse(
-                ingested=0,
-                packages=0,
-                skipped=1,
-                collection=collection,
-            )
+            raise IngestPackageDownloadError(
+                f"Could not download govinfo package {package_id}: {exc}"
+            ) from exc
 
         chunks = self._chunkify(pdf, user_metadata=request.metadata)
         if not chunks:

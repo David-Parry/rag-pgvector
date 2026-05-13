@@ -32,11 +32,57 @@ if (-not $env:ANTHROPIC_API_KEY) {
 
 Test-RagCommand helm 'Install Helm, then open a new PowerShell window: winget install Helm.Helm, or choco install kubernetes-helm, or see https://helm.sh/docs/intro/install/'
 
+function Test-RagTruthy {
+    param([string]$Value)
+    return $Value -match '^(1|true|yes|on)$'
+}
+
+function Test-RagRealBedrockBearerToken {
+    if (-not $env:AWS_BEARER_TOKEN_BEDROCK) {
+        return $false
+    }
+    return $env:AWS_BEARER_TOKEN_BEDROCK -ne 'replace-with-embedding-account-bedrock-api-key' -and
+        $env:AWS_BEARER_TOKEN_BEDROCK -ne 'replace-with-bedrock-api-key'
+}
+
+function Test-RagRealGovInfoApiKey {
+    if (-not $env:GOVINFO_API_KEY) {
+        return $false
+    }
+    return $env:GOVINFO_API_KEY -ne 'replace-with-govinfo-api-key'
+}
+
+$internalNetwork =
+    (Test-RagTruthy $env:RAG_INTERNAL_NETWORK) -or
+    (Test-RagTruthy $env:RAG_ON_PREM) -or
+    (Test-RagTruthy $env:ON_PREM)
+$awsCliAvailable = $null -ne (Get-Command aws -CommandType Application -ErrorAction SilentlyContinue)
+
 $awsAuthMode = if ($env:AWS_AUTH_MODE) {
     $env:AWS_AUTH_MODE
 }
-else {
+elseif (Test-RagRealBedrockBearerToken) {
     'bearer'
+}
+elseif ($env:AWS_ACCESS_KEY_ID -or $env:AWS_SECRET_ACCESS_KEY -or $env:AWS_PROFILE -or $env:AWS_DEFAULT_PROFILE -or (-not $internalNetwork -and $awsCliAvailable)) {
+    'accessKey'
+}
+elseif ($internalNetwork) {
+    'none'
+}
+else {
+    Write-Error @"
+ERROR: Bedrock embedding credentials are required outside the internal/on-prem network.
+
+Set one of:
+  - AWS_BEARER_TOKEN_BEDROCK in .env
+  - AWS_PROFILE / AWS_DEFAULT_PROFILE for an AWS CLI profile
+  - AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+
+For an internal/on-prem install that intentionally does not inject AWS credentials:
+  `$env:RAG_INTERNAL_NETWORK = '1'; .\scripts\ps\Helm-Install.ps1
+"@
+    exit 1
 }
 
 if ($awsAuthMode -eq 'accessKey' -and (-not $env:AWS_ACCESS_KEY_ID -or -not $env:AWS_SECRET_ACCESS_KEY)) {
@@ -58,6 +104,9 @@ if ($awsAuthMode -eq 'accessKey' -and (-not $env:AWS_ACCESS_KEY_ID -or -not $env
     }
 }
 
+$bedrockBearerTokenValue = if (Test-RagRealBedrockBearerToken) { $env:AWS_BEARER_TOKEN_BEDROCK } else { '' }
+$govinfoApiKeyValue = if (Test-RagRealGovInfoApiKey) { $env:GOVINFO_API_KEY } else { 'DEMO_KEY' }
+
 if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0) {
     kubectl create namespace $NAMESPACE
     if ($LASTEXITCODE -ne 0) {
@@ -73,17 +122,20 @@ $argsList = @(
     '--set', 'fullnameOverride=rag',
     '--set', "image.tag=${TAG}",
     '--set', "aws.auth.mode=$awsAuthMode",
-    '--set-string', "aws.auth.bearerToken=$(if ($env:AWS_BEARER_TOKEN_BEDROCK) { $env:AWS_BEARER_TOKEN_BEDROCK } else { '' })",
+    '--set-string', "aws.auth.bearerToken=$bedrockBearerTokenValue",
     '--set-string', "aws.auth.accessKeyId=$(if ($env:AWS_ACCESS_KEY_ID) { $env:AWS_ACCESS_KEY_ID } else { '' })",
     '--set-string', "aws.auth.secretAccessKey=$(if ($env:AWS_SECRET_ACCESS_KEY) { $env:AWS_SECRET_ACCESS_KEY } else { '' })",
     '--set-string', "aws.auth.sessionToken=$(if ($env:AWS_SESSION_TOKEN) { $env:AWS_SESSION_TOKEN } else { '' })",
     '--set', "bedrock.region=$(if ($env:AWS_REGION) { $env:AWS_REGION } else { 'us-east-1' })",
     '--set-string', "bedrock.embeddingModelId=$(if ($env:EMBEDDING_MODEL) { $env:EMBEDDING_MODEL } elseif ($env:BEDROCK_EMBEDDING_MODEL_ID) { $env:BEDROCK_EMBEDDING_MODEL_ID } else { 'amazon.titan-embed-text-v2:0' })",
-    '--set-string', "bedrock.embeddingBearerToken=$(if ($env:AWS_BEARER_TOKEN_BEDROCK) { $env:AWS_BEARER_TOKEN_BEDROCK } else { '' })",
+    '--set-string', "bedrock.embeddingBearerToken=$bedrockBearerTokenValue",
     '--set', "bedrock.embeddingDimensions=$(if ($env:BEDROCK_EMBEDDING_DIMENSIONS) { $env:BEDROCK_EMBEDDING_DIMENSIONS } else { '1024' })",
     '--set-string', "anthropic.apiKey=$(if ($env:ANTHROPIC_API_KEY) { $env:ANTHROPIC_API_KEY } else { '' })",
     '--set-string', "anthropic.model=$(if ($env:ANTHROPIC_DIRECT_MODEL) { $env:ANTHROPIC_DIRECT_MODEL } else { 'claude-sonnet-4-5' })",
-    '--set-string', "govinfo.apiKey=$(if ($env:GOVINFO_API_KEY) { $env:GOVINFO_API_KEY } else { '' })",
+    '--set', "anthropic.maxTokens=$(if ($env:ANTHROPIC_MAX_TOKENS) { $env:ANTHROPIC_MAX_TOKENS } else { '1024' })",
+    '--set', "anthropic.temperature=$(if ($env:ANTHROPIC_TEMPERATURE) { $env:ANTHROPIC_TEMPERATURE } else { '0.0' })",
+    '--set', "anthropic.timeoutSeconds=$(if ($env:ANTHROPIC_TIMEOUT_SECONDS) { $env:ANTHROPIC_TIMEOUT_SECONDS } else { '90' })",
+    '--set-string', "govinfo.apiKey=$govinfoApiKeyValue",
     '--set-string', "govinfo.baseUrl=$(if ($env:GOVINFO_BASE_URL) { $env:GOVINFO_BASE_URL } else { 'https://api.govinfo.gov' })",
     '--set-string', "vectorizer.env.LOG_LEVEL=$(if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { 'DEBUG' })",
     '--set-string', "vectorizer.env.LOG_FORMAT=$(if ($env:LOG_FORMAT) { $env:LOG_FORMAT } else { 'json' })",

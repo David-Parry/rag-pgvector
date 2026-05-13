@@ -16,6 +16,8 @@ CHART_PATH = Path(__file__).resolve().parent.parent / "infra" / "helm" / "rag-pg
 
 REQUIRED_VALUES = [
     "--set",
+    "aws.auth.mode=bearer",
+    "--set",
     "aws.auth.bearerToken=fake-bearer",
     "--set",
     "anthropic.apiKey=fake-anthropic",
@@ -82,6 +84,25 @@ def test_helm_template_supports_irsa_mode_without_aws_keys() -> None:
     assert "eks.amazonaws.com/role-arn" in rendered
     assert "AWS_BEARER_TOKEN_BEDROCK" not in rendered
     assert "AWS_ACCESS_KEY_ID" not in rendered
+
+
+def test_helm_template_supports_none_mode_without_aws_keys() -> None:
+    result = _run(
+        "template",
+        "rag",
+        str(CHART_PATH),
+        "--set",
+        "aws.auth.mode=none",
+        "--set",
+        "anthropic.apiKey=fake-anthropic",
+        "--set",
+        "govinfo.apiKey=fake",
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = result.stdout
+    assert "AWS_BEARER_TOKEN_BEDROCK" not in rendered
+    assert "AWS_ACCESS_KEY_ID" not in rendered
+    assert "AWS_SECRET_ACCESS_KEY" not in rendered
 
 
 def test_helm_template_supports_temporary_session_credentials() -> None:

@@ -15,6 +15,13 @@ KUBE_CONTEXT="${KUBE_CONTEXT:-docker-desktop}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+GENERATED_CA_BUNDLE=""
+cleanup() {
+  if [[ -n "$GENERATED_CA_BUNDLE" ]]; then
+    rm -f "$GENERATED_CA_BUNDLE"
+  fi
+}
+trap cleanup EXIT
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: docker is not installed (Docker Desktop required)." >&2
@@ -25,15 +32,55 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
-SERVICE_BUILD_ARGS=()
-if [[ -n "$CUSTOM_CA_CERT" ]]; then
-  if [[ ! -f "$CUSTOM_CA_CERT" ]]; then
-    echo "ERROR: CUSTOM_CA_CERT does not point to a readable file: $CUSTOM_CA_CERT" >&2
+PY_APP_BUILD_ARGS=()
+
+add_secret_file() {
+  local env_name="$1"
+  local secret_id="$2"
+  local file_path="${!env_name:-}"
+
+  if [[ -z "$file_path" ]]; then
+    return
+  fi
+  if [[ ! -f "$file_path" ]]; then
+    echo "ERROR: $env_name does not point to a readable file: $file_path" >&2
     exit 1
   fi
+
   export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
-  SERVICE_BUILD_ARGS+=(--secret "id=custom_ca,src=${CUSTOM_CA_CERT}")
+  PY_APP_BUILD_ARGS+=(--secret "id=${secret_id},src=${file_path}")
+}
+
+if [[ -n "${RAG_DOCKER_UV_DEFAULT_INDEX:-}" ]]; then
+  PY_APP_BUILD_ARGS+=(--build-arg "UV_DEFAULT_INDEX=${RAG_DOCKER_UV_DEFAULT_INDEX}")
 fi
+add_secret_file RAG_UV_DEFAULT_INDEX_FILE uv_default_index
+add_secret_file RAG_DOCKER_NETRC_FILE netrc
+
+if [[ -z "${RAG_DOCKER_SSL_CERT_BUNDLE_FILE:-}" && "$(uname -s)" == "Darwin" && "$(command -v security || true)" ]]; then
+  GENERATED_CA_BUNDLE="$(mktemp "${TMPDIR:-/tmp}/rag-docker-ca-bundle.XXXXXX.pem")"
+  KEYCHAINS=()
+  for keychain in \
+    /System/Library/Keychains/SystemRootCertificates.keychain \
+    /Library/Keychains/System.keychain \
+    "$HOME"/Library/Keychains/login.keychain-db \
+    "$HOME"/Library/Keychains/*.keychain-db \
+    "$HOME"/Library/Keychains/*.keychain; do
+    if [[ -f "$keychain" ]]; then
+      KEYCHAINS+=("$keychain")
+    fi
+  done
+  if [[ "${#KEYCHAINS[@]}" -gt 0 ]]; then
+    security find-certificate -a -p "${KEYCHAINS[@]}" >"$GENERATED_CA_BUNDLE" 2>/dev/null || true
+  fi
+  if [[ -s "$GENERATED_CA_BUNDLE" ]]; then
+    RAG_DOCKER_SSL_CERT_BUNDLE_FILE="$GENERATED_CA_BUNDLE"
+  else
+    rm -f "$GENERATED_CA_BUNDLE"
+    GENERATED_CA_BUNDLE=""
+  fi
+fi
+add_secret_file RAG_DOCKER_SSL_CERT_BUNDLE_FILE ssl_cert_bundle
 
 echo "Checking Docker Desktop Kubernetes context..."
 if ! kubectl config get-contexts -o name | grep -qx "$KUBE_CONTEXT"; then
@@ -64,11 +111,11 @@ docker build -t "rag-pgvector/postgres:17" "$ROOT_DIR/infra/docker/postgres-pgve
 
 echo
 echo "Building rag-pgvector/vectorizer:${TAG} ..."
-docker build "${PY_APP_BUILD_ARGS[@]} ${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
+docker build "${PY_APP_BUILD_ARGS[@]}" -t "rag-pgvector/vectorizer:${TAG}" -f "$ROOT_DIR/vectorizer/Dockerfile" "$ROOT_DIR"
 
 echo
 echo "Building rag-pgvector/question-api:${TAG} ..."
-docker build "${PY_APP_BUILD_ARGS[@]} ${SERVICE_BUILD_ARGS[@]}" -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
+docker build "${PY_APP_BUILD_ARGS[@]}" -t "rag-pgvector/question-api:${TAG}" -f "$ROOT_DIR/question-api/Dockerfile" "$ROOT_DIR"
 
 cat <<EOF
 
