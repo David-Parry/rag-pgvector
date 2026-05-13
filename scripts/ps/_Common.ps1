@@ -8,6 +8,26 @@ if (-not $__ragPgVector_PsScriptsRoot) {
     $__ragPgVector_PsScriptsRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 
+function Add-RagUserLocalBinToPath {
+    if (-not $env:USERPROFILE) {
+        return
+    }
+    $localBin = Join-Path $env:USERPROFILE '.local\bin'
+    $pathParts = @($env:Path -split ';' | Where-Object { $_ })
+    $alreadyPresent = $false
+    foreach ($part in $pathParts) {
+        if ($part.TrimEnd('\') -ieq $localBin.TrimEnd('\')) {
+            $alreadyPresent = $true
+            break
+        }
+    }
+    if (-not $alreadyPresent) {
+        $env:Path = "${localBin};$env:Path"
+    }
+}
+
+Add-RagUserLocalBinToPath
+
 function Get-RagRepoRoot {
     $scriptsDir = Split-Path -Parent $__ragPgVector_PsScriptsRoot
     return (Resolve-Path (Join-Path $scriptsDir '..')).Path

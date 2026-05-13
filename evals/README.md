@@ -14,10 +14,18 @@ DeepEval-based retriever benchmark for the `rag-pgvector` workspace. The benchma
 
 The live benchmark also needs the same retrieval dependencies as `question-api`: `DATABASE_URL`, Bedrock embedding credentials, and either `ANTHROPIC_API_KEY` or a reachable Ollama service depending on the judge provider.
 
+The benchmark expects the pgvector environment to be running already. The runners do not start, stop, tear down, delete, or reset the vector database; they only check that `DATABASE_URL` is reachable before running the benchmark.
+
 ## Run
 
 ```bash
 ./scripts/eval-retrieval.sh
+```
+
+PowerShell:
+
+```powershell
+.\scripts\ps\Eval-Retrieval.ps1
 ```
 
 Override sweep values per run:
@@ -26,7 +34,19 @@ Override sweep values per run:
 TOP_K_GRID=3,6,8 THRESHOLD_GRID=0.4,0.6,0.8 ./scripts/eval-retrieval.sh
 ```
 
-The CLI prints a markdown table with precision, recall, and relevancy for each grid cell plus the best setting for each metric.
+The script prints a markdown table with precision, recall, and relevancy for each grid cell plus the best setting for each metric. It also writes the same output to a timestamped report under `documentation/eval-reports/`.
+
+Override the report destination per run:
+
+```bash
+DEEPEVAL_REPORT_PATH=documentation/eval-reports/latest.md ./scripts/eval-retrieval.sh
+```
+
+PowerShell also supports parameters:
+
+```powershell
+.\scripts\ps\Eval-Retrieval.ps1 -TopKGrid '3,6,8' -ThresholdGrid '0.4,0.6,0.8' -ReportPath 'documentation/eval-reports/latest.md'
+```
 
 ## Tests
 

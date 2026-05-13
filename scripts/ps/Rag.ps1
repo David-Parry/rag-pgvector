@@ -12,6 +12,7 @@
   .\Rag.ps1 seed-ingest
   .\Rag.ps1 bedrock-create-api-key
   .\Rag.ps1 bedrock-smoke
+  .\Rag.ps1 eval-retrieval
   .\Rag.ps1 teardown
 
 .EXAMPLE
@@ -44,6 +45,7 @@ Commands:
   seed-ingest            POST /ingest sample batch
   bedrock-create-api-key AWS IAM + Bedrock key -> .env
   bedrock-smoke [text]   Embed smoke test using bearer token in .env
+  eval-retrieval         Run DeepEval retriever benchmark and write report
   teardown               helm uninstall + optional namespace delete
 
 Environment variables match the bash scripts (e.g. NAMESPACE, TAG, VECTORIZER_URL).
@@ -52,6 +54,7 @@ Examples:
   .\Rag.ps1 docker-up
   .\Rag.ps1 ingest-package BILLS-115hr1625enr
   $env:RAW='1'; .\Rag.ps1 ask "short question"
+  .\Rag.ps1 eval-retrieval
 
 Individual scripts live beside this file:
   Docker-Desktop-Up.ps1, Helm-Install.ps1, Port-Forward.ps1, ...
@@ -111,6 +114,10 @@ switch -Regex ($Command.ToLowerInvariant()) {
     }
     '^bedrock-smoke$' {
         & (Join-Path $here 'Bedrock-Smoke.ps1') @forwardArgs
+        break
+    }
+    '^eval-retrieval$|^eval$|^deepeval$' {
+        & (Join-Path $here 'Eval-Retrieval.ps1') @forwardArgs
         break
     }
     '^teardown$|^down$' {

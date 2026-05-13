@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 
 from rag_evals.core.composition import build_container
 from rag_evals.core.settings import EvalsSettings
@@ -12,7 +13,17 @@ from rag_evals.domain.golden import Golden, load_goldens
 
 
 def main() -> None:
+    _configure_windows_event_loop_policy()
     asyncio.run(_run())
+
+
+def _configure_windows_event_loop_policy() -> None:
+    if sys.platform != "win32":
+        return
+    selector_policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+    if selector_policy is None:
+        return
+    asyncio.set_event_loop_policy(selector_policy())
 
 
 async def _run() -> None:

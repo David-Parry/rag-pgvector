@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
 
+- `scripts/eval-retrieval.sh` now writes a timestamped markdown report under `documentation/eval-reports/` while still printing benchmark output to the terminal.
+
+- `scripts/ps/Eval-Retrieval.ps1` PowerShell runner for the DeepEval retriever benchmark report, available through `scripts/ps/Rag.ps1 eval-retrieval`.
+
+- DeepEval report runners now explicitly require an already-running pgvector database and fail fast when `DATABASE_URL` is unreachable, without starting or tearing down database resources.
+
+- `.gitattributes` keeps shell scripts checked out with LF line endings so bash runners work consistently on Windows.
+
 - Direct Anthropic Claude provider support for `question-api`, configured by `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_FILE`.
 
 - Docker build support for corporate PyPI mirrors: `vectorizer` and `question-api` builder stages accept optional BuildKit secrets (`uv_default_index`, `netrc`, `ssl_cert_bundle`), optional `UV_DEFAULT_INDEX` build-arg, and `scripts/docker-desktop-up.sh` / `scripts/ps/Docker-Desktop-Up.ps1` pass-through via `RAG_*` environment variables; documented in `documentation/DOCKER_PYPI_MIRROR.md`.
@@ -26,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests: isolate the Anthropic missing-key unit test from real shell credentials and run eval integration tests with a psycopg-compatible selector event loop on Windows.
 
 - Tests: exclude integration-marked tests from the default pytest run so external Bedrock, Anthropic, and pgvector checks remain opt-in via `pytest -m integration`.
+
+- `rag-evals`: configure the CLI to use a Windows Selector event loop before opening async psycopg connections, matching the integration test policy.
+
+- PowerShell helpers now prepend `%USERPROFILE%\.local\bin` to the process PATH at startup so locally installed tools such as `uv` are discovered consistently.
+
+- `question-api`: log the configured Anthropic model during startup instead of referencing the removed `llm_provider` setting.
 
 - `scripts/ps/Ingest-Package.ps1`: build request JSON with native PowerShell parsing instead of `jq --argjson`, preventing Windows PowerShell from stripping metadata JSON quotes before invoking `jq`.
 
