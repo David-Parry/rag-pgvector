@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 const DEFAULT_RAG_BASE = "http://127.0.0.1:8002";
 
+/** RFC 4122 UUID string (case-insensitive). */
+const UUID_STRING_RE =
+  /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+
 function normalizeBase(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
 type ClientBody = {
   question?: unknown;
+  sessionId?: unknown;
   metadata?: unknown;
   topK?: unknown;
   scoreThreshold?: unknown;
@@ -34,11 +39,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const sessionId = body.sessionId;
+  if (typeof sessionId !== "string" || !UUID_STRING_RE.test(sessionId.trim())) {
+    return NextResponse.json(
+      {
+        error:
+          "sessionId is required and must be a canonical UUID string (used as LangGraph thread_id)",
+      },
+      { status: 400 }
+    );
+  }
+
   const base = normalizeBase(
     process.env.RAG_QUESTION_API_URL?.trim() || DEFAULT_RAG_BASE
   );
 
-  const upstreamPayload: Record<string, unknown> = { question: question.trim() };
+  const upstreamPayload: Record<string, unknown> = {
+    question: question.trim(),
+    sessionId: sessionId.trim(),
+  };
   if (body.metadata !== undefined && body.metadata !== null) {
     if (typeof body.metadata !== "object" || Array.isArray(body.metadata)) {
       return NextResponse.json(

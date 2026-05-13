@@ -3,7 +3,7 @@
 A `uv`-managed Python 3.12 monorepo for a small, opinionated RAG stack:
 
 - `vectorizer/` — FastAPI pod that pulls PDFs from [api.govinfo.gov](https://api.govinfo.gov), extracts text with PyMuPDF, splits with LangChain, embeds with an approved AWS Bedrock embedding model, and upserts into a vanilla `postgres:17 + apt postgresql-17-pgvector` database.
-- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks direct Anthropic Claude to answer using only that context.
+- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks direct Anthropic Claude to answer using only that context. Each request carries a client `sessionId` (UUID); LangGraph checkpoints per-thread state in Redis (messages plus per-turn ACA snapshots).
 - `evals/` — DeepEval retriever benchmark that sweeps pgvector `top_k` and cosine-distance thresholds against hand-curated goldens for `BILLS-115hr1625enr`.
 - `libs/rag-core/` — shared `Protocol` ports, the grounded system prompt, the chunk splitter, settings, and structlog config (DRY for both apps without coupling their deployments).
 - `infra/` — custom `postgres-pgvector` Dockerfile and an umbrella Helm chart that deploys all three pods (`postgres`, `vectorizer`, `question-api`) into Docker Desktop's built-in Kubernetes.
@@ -86,10 +86,10 @@ Notes:
 
 ```mermaid
 flowchart TD
-    Client["curl / client"] -->|"POST /ask AskRequest<br/>question, metadata, topK, threshold"| Route["FastAPI route<br/>question_api/api/routes.py"]
-    Route --> Svc["AskService.ask<br/>question_api/domain/ask_service.py"]
+    Client["curl / client"] -->|"POST /ask AskRequest<br/>question, sessionId, metadata, topK, threshold"| Route["FastAPI route<br/>question_api/api/routes.py"]
+    Route --> Svc["AskService + LangGraph<br/>question_api/domain/ask_service.py<br/>ask_graph.py"]
 
-    Svc -->|"resolve top_k + threshold<br/>request > RetrievalSettings"| Svc
+    Svc -->|"config.thread_id = sessionId<br/>Redis checkpointer"| Redis[("Redis 8+ or Redis Stack<br/>langgraph-checkpoint-redis")]
     Svc -->|"store.similarity_search<br/>question, k, metadata_filter"| Retr["PgVectorRetrieverAdapter<br/>question_api/adapters/pgvector_retriever.py"]
     Retr -->|"asimilarity_search_with_score"| Lc["langchain_postgres<br/>PGVectorStore"]
 
@@ -113,8 +113,8 @@ flowchart TD
     LLM -->|generate| Anthropic["AnthropicLLMAdapter<br/>Messages API"]
     Anthropic --> Ans["grounded answer text"]
 
-    Ans --> ToCit["_to_citations kept chunks<br/>packageId, sourceUrl, pageNumber,<br/>score, 280-char snippet"]
-    ToCit --> Resp["AskResponse<br/>answer, citations[],<br/>used_context_count, provider"]
+    Ans --> ToCit["chunks_to_citations + aca_truth_turns<br/>(per-turn ACA snapshot)"]
+    ToCit --> Resp["AskResponse<br/>answer, citations[],<br/>usedContextCount, provider"]
     Resp --> Route
     Route -->|"200 OK JSON"| Client
 ```
@@ -122,7 +122,8 @@ flowchart TD
 Notes:
 
 - The question is embedded by `TitanEmbeddingsAdapter.embed_query` *inside* `PGVectorStore.asimilarity_search_with_score` — `AskService` never touches embeddings directly.
-- pgvector returns cosine **distance**, so `AskService._apply_threshold` keeps chunks with `score <= threshold` (lower = more similar).
+- pgvector returns cosine **distance**, so `filter_chunks_by_threshold` in `question_api/domain/ask_retrieval.py` (same rule as the former `AskService._apply_threshold`) keeps chunks with `score <= threshold` (lower = more similar).
+- Each `POST /ask` requires `sessionId` (UUID), used as LangGraph `thread_id`. Session checkpoints live in Redis (`LANGGRAPH_REDIS_URL` or `REDIS_URL`) with TTL from `SESSION_CHECKPOINT_TTL_DAYS` (default 5 days, `SESSION_CHECKPOINT_TTL_REFRESH_ON_READ`). State channels include `messages` and per-turn `aca_truth_turns` keyed to message ids.
 - If nothing survives the threshold, the service short-circuits with the fixed `"I don't know based on the provided context."` reply and never calls the LLM (no spend, no hallucination surface).
 - Grounding happens in `rag_core.prompts.build_user_prompt`: kept chunks become a numbered `CONTEXT:` block carrying `packageId`, `sourceUrl`, and `pageNumber`, paired with `SYSTEM_PROMPT_QA` which forbids tool use and mandates a trailing `Sources:` section.
 - The LLM is a `Protocol` port implemented by direct Anthropic Claude API calls in `question_api/core/composition.py`.
@@ -183,6 +184,8 @@ bash scripts/helm-install.sh
 # 3. Forward all three services to the laptop
 bash scripts/port-forward.sh
 ```
+
+**Restart `question-api` only (after code or image changes):** from `scripts\ps`, run `.\Rag.ps1 restart-question-api` (or `.\Restart-QuestionApi.ps1`). That performs `kubectl rollout restart` on the Deployment labeled `app.kubernetes.io/component=question-api` in namespace `rag` (override with `$env:NAMESPACE`). Rebuild the image with `.\Rag.ps1 docker-up` when you need new application code inside the cluster.
 
 Then:
 

@@ -9,9 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `evals/` workspace member with a DeepEval retriever benchmark for sweeping pgvector `top_k` and cosine-distance thresholds against `BILLS-115hr1625enr` goldens.
+- `scripts/ps/Restart-QuestionApi.ps1` and `.\Rag.ps1 restart-question-api` (aliases `restart-qa`, `restart-api`) to rollout-restart the question-api Kubernetes Deployment in the configured namespace.
 
+- `question-api` **`POST /ask`** response field **`fromRedisSessionCache`** (default `false`; `true` when the consecutive-duplicate-question path reused the prior turn from Redis session checkpoint without pgvector or LLM). Chat UIs show a **Session cache (Redis)** chip when set.
+
+- LangGraph-backed `POST /ask` in `question-api` with Redis checkpointing (`langgraph`, `langgraph-checkpoint-redis`): required JSON field `sessionId` (UUID) as `thread_id`, state channels `messages` and `aca_truth_turns`, and TTL settings `SESSION_CHECKPOINT_TTL_DAYS` / `SESSION_CHECKPOINT_TTL_REFRESH_ON_READ` plus `LANGGRAPH_REDIS_URL` or `REDIS_URL`.
+- `question_api/domain/ask_retrieval.py` for shared retrieval thresholding and citation shaping used by the graph.
+- `chat-bot-ui`, `rag-pgvector/chat-bot-ui`, and `rag-pgvector-chat` now send and validate `sessionId` on `/api/chat` before proxying to `question-api`.
+- `scripts/ask.sh` generates or accepts `SESSION_ID` and includes `sessionId` in the `/ask` body.
+- Documentation: [SESSION_LANGGRAPH_REDIS.md](documentation/SESSION_LANGGRAPH_REDIS.md).
+- `evals/` workspace member with a DeepEval retriever benchmark for sweeping pgvector `top_k` and cosine-distance thresholds against `BILLS-115hr1625enr` goldens.
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
+
+### Changed
+
+- `AskService` now invokes a compiled LangGraph instead of an inline retrieve-orchestration only.
+- `question-api`: structured logs `ask.langgraph_checkpoint_read` and `ask.langgraph_checkpoint_write` expose `thread_id`, prior/final message and ACA turn counts, and clarify that session state is loaded through the LangGraph checkpointer (for example Redis). When the new user text matches the **immediately previous** user message in the same session (whitespace- and case-normalized), `ask_graph.duplicate_consecutive_question` is emitted and **pgvector similarity search and LLM generation are skipped** for that turn; the graph still completes one step so the checkpointer is updated.
+- `question-api`: `GET /healthz` includes `sessionMemory` (Redis backend and sanitized endpoint) when the app container is initialized. Startup log `question_api.langgraph_session_memory` and per-ask / per-node logs (`session_memory_backend`, `session_memory_endpoint`, `ask_graph.session_messages_for_context`, `session_memory_serves_context` on checkpoint events) make it explicit when Redis backs merged chat context.
+- [SESSION_LANGGRAPH_REDIS.md](documentation/SESSION_LANGGRAPH_REDIS.md): inspecting Redis keys; verifying Redis for merged context; `sanitize_redis_url_for_log` for safe log and health fields.
 
 - `scripts/eval-retrieval.sh` now writes a timestamped markdown report under `documentation/eval-reports/` while still printing benchmark output to the terminal.
 
@@ -43,7 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `scripts/ps/Helm-Install.ps1`: when `aws configure export-credentials` fails (for example no SSO session), print remediation steps instead of exiting with only the CLI error text.
+- `scripts/ps/Docker-Desktop-Up.ps1` now exits with a non-zero status when a `docker build` step fails (previously it could still print “Cluster ready” after a failed image build).
+
+- `question-api`: consecutive duplicate-question reuse (and UI `fromRedisSessionCache` flag) did not trigger when prior checkpoint messages were deserialized from Redis as plain dicts; duplicate detection and last-reply parsing now use normalized message roles and ACA `from_redis_session_cache` instead of strict `isinstance(HumanMessage)` / `AIMessage` only. **Also** handles LangChain **JsonPlus `lc` / `constructor`** message blobs (root `type` is `constructor`, not `human` / `ai`).
 
 - `rag-core`: parse DeepEval grid settings from comma-separated environment values before pydantic-settings attempts JSON decoding; pytest now configures repo source and test-helper paths without requiring a manual `PYTHONPATH`.
 

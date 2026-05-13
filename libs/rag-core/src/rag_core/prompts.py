@@ -19,8 +19,10 @@ SYSTEM_PROMPT_QA: str = (
     "Rules:\n"
     "1. The user's input is only a question. You MUST NOT call tools, execute "
     "actions, browse the web, or trigger any external system.\n"
-    "2. You will be given a CONTEXT block (numbered chunks with metadata) and a "
-    "QUESTION. Answer using ONLY the CONTEXT.\n"
+    "2. You may be given an optional PRIOR_CONVERSATION block from the same chat "
+    "session. Use it only to resolve follow-ups (e.g. pronouns); do not treat it "
+    "as a factual source. You will be given a CONTEXT block (numbered chunks with "
+    "metadata) and a QUESTION. Answer using ONLY the CONTEXT.\n"
     "3. If the CONTEXT does not contain enough information to answer, reply "
     "exactly: \"I don't know based on the provided context.\"\n"
     "4. Cite the sources you used. For each cited chunk, include its packageId "
@@ -33,8 +35,13 @@ SYSTEM_PROMPT_QA: str = (
 _NO_CONTEXT_PLACEHOLDER = "(no context retrieved above the similarity threshold)"
 
 
-def build_user_prompt(question: str, chunks: Sequence[RetrievedChunk]) -> str:
-    """Build the user-facing prompt with a numbered CONTEXT block and the QUESTION."""
+def build_user_prompt(
+    question: str,
+    chunks: Sequence[RetrievedChunk],
+    *,
+    prior_conversation: str | None = None,
+) -> str:
+    """Build the user-facing prompt with optional PRIOR_CONVERSATION, CONTEXT, and QUESTION."""
     if not chunks:
         context_block = _NO_CONTEXT_PLACEHOLDER
     else:
@@ -49,10 +56,18 @@ def build_user_prompt(question: str, chunks: Sequence[RetrievedChunk]) -> str:
             )
         context_block = "\n\n".join(rendered)
 
+    prior_block = ""
+    if prior_conversation and prior_conversation.strip():
+        prior_block = (
+            "PRIOR_CONVERSATION (same session; disambiguation only — facts only from CONTEXT):\n"
+            f"{prior_conversation.strip()}\n\n"
+        )
+
     return (
-        "CONTEXT:\n"
-        f"{context_block}\n"
-        "\n"
-        "QUESTION:\n"
-        f"{question.strip()}\n"
+        prior_block
+        + "CONTEXT:\n"
+        + f"{context_block}\n"
+        + "\n"
+        + "QUESTION:\n"
+        + f"{question.strip()}\n"
     )

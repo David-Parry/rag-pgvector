@@ -141,14 +141,23 @@ if ($env:RAG_DOCKER_SSL_CERT_BUNDLE_FILE) {
 Write-Host ''
 Write-Host 'Building rag-pgvector/postgres:17 ...'
 docker build -t 'rag-pgvector/postgres:17' (Join-Path $ROOT_DIR 'infra/docker/postgres-pgvector')
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 
 Write-Host ''
 Write-Host "Building rag-pgvector/vectorizer:${TAG} ..."
 docker build @pyAppBuildArgs -t "rag-pgvector/vectorizer:${TAG}" -f (Join-Path $ROOT_DIR 'vectorizer/Dockerfile') $ROOT_DIR
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 
 Write-Host ''
 Write-Host "Building rag-pgvector/question-api:${TAG} ..."
 docker build @pyAppBuildArgs -t "rag-pgvector/question-api:${TAG}" -f (Join-Path $ROOT_DIR 'question-api/Dockerfile') $ROOT_DIR
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 
 $builtImages = @(
     'rag-pgvector/postgres:17',

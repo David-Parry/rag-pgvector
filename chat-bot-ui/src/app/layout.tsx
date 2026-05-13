@@ -24,17 +24,17 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={
-          {
-            ["--font-sans" as string]: "var(--font-geist-sans)",
-          } as CSSProperties
-        }
-      >
-        {children}
-      </body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      style={
+        {
+          ["--font-sans" as string]: "var(--font-geist-sans)",
+          ["--font-mono" as string]: "var(--font-geist-mono)",
+        } as CSSProperties
+      }
+    >
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

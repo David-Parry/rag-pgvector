@@ -2,7 +2,7 @@
 #
 # Ask the question-api pod a single question over the port-forwarded service.
 #
-# The pod runs the AskService pipeline:
+# The pod runs the AskService + LangGraph pipeline (Redis checkpoint per sessionId):
 #   embed(question) with Titan v2  ->  pgvector similarity search
 #   ->  prompt-stuff top-K chunks  ->  direct Anthropic Claude
 #   ->  AskResponse{ answer, citations, usedContextCount, provider }.
@@ -14,10 +14,12 @@
 #   TOP_K=10 SCORE_THRESHOLD=0.30 ./scripts/ask.sh "..."
 #   METADATA='{"packageId":"BILLS-115hr1625enr"}' ./scripts/ask.sh "..."
 #   QUESTION_API_URL=http://localhost:8002 ./scripts/ask.sh "..."
+#   SESSION_ID="550e8400-e29b-41d4-a716-446655440000" ./scripts/ask.sh "..."
 #
 # Env vars:
 #   QUESTION_API_URL  Base URL for the question-api pod  (default: http://localhost:8002)
 #   QUESTION          Question text                      (overridden by $1 if given)
+#   SESSION_ID        UUID for LangGraph thread_id       (default: uuidgen or python3)
 #   METADATA          JSON metadata filter for retrieval (default: {})
 #   TOP_K             Override RETRIEVAL_TOP_K           (optional, 1..50)
 #   SCORE_THRESHOLD   Override RETRIEVAL_SCORE_THRESHOLD (optional, >= 0)
@@ -43,6 +45,19 @@ METADATA="${METADATA:-{}}"
 TOP_K="${TOP_K:-6}"
 SCORE_THRESHOLD="${SCORE_THRESHOLD:-0.80}"
 
+if [[ -z "${SESSION_ID:-}" ]]; then
+  if command -v uuidgen >/dev/null 2>&1; then
+    SESSION_ID="$(uuidgen)"
+  elif command -v python3 >/dev/null 2>&1; then
+    SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+  elif command -v py >/dev/null 2>&1; then
+    SESSION_ID="$(py -c 'import uuid; print(uuid.uuid4())')"
+  else
+    echo "Set SESSION_ID or install uuidgen or python3 to generate a UUID" >&2
+    exit 1
+  fi
+fi
+
 if ! command -v jq >/dev/null 2>&1; then
   echo "this script requires 'jq' (brew install jq)" >&2
   exit 1
@@ -52,10 +67,11 @@ fi
 # the optional topK / scoreThreshold keys are only included when set.
 BODY="$(jq -nc \
   --arg q "${QUESTION}" \
+  --arg sid "${SESSION_ID}" \
   --argjson md "${METADATA}" \
   --arg topk "${TOP_K}" \
   --arg score "${SCORE_THRESHOLD}" \
-  '{question:$q, metadata:$md}
+  '{question:$q, sessionId:$sid, metadata:$md}
    + (if $topk  == "" then {} else {topK:        ($topk  | tonumber)} end)
    + (if $score == "" then {} else {scoreThreshold:($score | tonumber)} end)')"
 

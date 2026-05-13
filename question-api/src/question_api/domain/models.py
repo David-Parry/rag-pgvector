@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,11 @@ class AskRequest(BaseModel):
     """Body of ``POST /ask``."""
 
     question: str = Field(..., min_length=1, max_length=2000)
+    session_id: UUID = Field(
+        ...,
+        alias="sessionId",
+        description="Per-tab chat session id (GUID); used as LangGraph thread_id.",
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Metadata filter applied to the pgvector similarity search (e.g. collection).",
@@ -45,5 +51,14 @@ class AskResponse(BaseModel):
     citations: list[Citation]
     used_context_count: int = Field(alias="usedContextCount")
     provider: str
+    from_redis_session_cache: bool = Field(
+        default=False,
+        alias="fromRedisSessionCache",
+        description=(
+            "True when this answer reused the prior turn from LangGraph session checkpoint "
+            "(Redis in production) without a new pgvector similarity search or LLM call "
+            "(consecutive duplicate user question)."
+        ),
+    )
 
     model_config = {"populate_by_name": True}

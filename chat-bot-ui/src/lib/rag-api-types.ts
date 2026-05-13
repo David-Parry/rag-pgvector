@@ -20,6 +20,8 @@ export type AskSuccessResponse = {
   citations: Citation[];
   usedContextCount: number;
   provider: string;
+  /** True when the prior turn was reused from session checkpoint (no new pgvector/LLM). */
+  fromRedisSessionCache: boolean;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -57,11 +59,14 @@ export function parseAskSuccessResponse(data: unknown): AskSuccessResponse | nul
   }
   if (typeof data.usedContextCount !== "number" || Number.isNaN(data.usedContextCount)) return null;
   if (typeof data.provider !== "string") return null;
+  const fromRedisSessionCache =
+    typeof data.fromRedisSessionCache === "boolean" ? data.fromRedisSessionCache : false;
   return {
     answer: data.answer,
     citations,
     usedContextCount: data.usedContextCount,
     provider: data.provider,
+    fromRedisSessionCache,
   };
 }
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from question_api.core.langgraph_redis_settings import LanggraphRedisSettings
 from rag_core.settings import (
     AnthropicSettings,
     AwsBedrockSettings,
@@ -20,6 +21,7 @@ class QuestionApiSettings:
     aws: AwsBedrockSettings
     database: DatabaseSettings
     retrieval: RetrievalSettings
+    langgraph_redis: LanggraphRedisSettings
 
     @classmethod
     def load(cls) -> QuestionApiSettings:
@@ -29,4 +31,5 @@ class QuestionApiSettings:
             aws=AwsBedrockSettings(),
             database=DatabaseSettings(),
             retrieval=RetrievalSettings(),
+            langgraph_redis=LanggraphRedisSettings(),
         )

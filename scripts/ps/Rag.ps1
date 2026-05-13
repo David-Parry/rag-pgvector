@@ -17,6 +17,9 @@
 
 .EXAMPLE
   $env:KILL_STALE = '1'; .\Rag.ps1 port-forward
+
+.EXAMPLE
+  .\Rag.ps1 restart-question-api
 #>
 param(
     [Parameter(Position = 0)]
@@ -40,6 +43,7 @@ Commands:
   docker-up              Build images and prep Docker Desktop Kubernetes namespace
   helm-install           helm upgrade --install (loads repo .env)
   port-forward           kubectl port-forward vectorizer, question-api, postgres
+  restart-question-api   kubectl rollout restart for question-api Deployment (K8s)
   ingest-package <id>    POST /ingest/package
   ask [question]         POST /ask (omit question for demo default)
   seed-ingest            POST /ingest sample batch
@@ -57,7 +61,7 @@ Examples:
   .\Rag.ps1 eval-retrieval
 
 Individual scripts live beside this file:
-  Docker-Desktop-Up.ps1, Helm-Install.ps1, Port-Forward.ps1, ...
+  Docker-Desktop-Up.ps1, Helm-Install.ps1, Port-Forward.ps1, Restart-QuestionApi.ps1, ...
 '@
 }
 
@@ -88,6 +92,10 @@ switch -Regex ($Command.ToLowerInvariant()) {
     }
     '^port-forward$|^pf$' {
         & (Join-Path $here 'Port-Forward.ps1') @forwardArgs
+        break
+    }
+    '^restart-question-api$|^restart-qa$|^restart-api$' {
+        & (Join-Path $here 'Restart-QuestionApi.ps1') @forwardArgs
         break
     }
     '^ingest-package$|^ingest$' {

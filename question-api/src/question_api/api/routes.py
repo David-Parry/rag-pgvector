@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from botocore.exceptions import NoCredentialsError
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from question_api.api.dependencies import get_ask_service
+from question_api.core.langgraph_redis_settings import sanitize_redis_url_for_log
 from question_api.domain.ask_service import AskService
 from question_api.domain.models import AskRequest, AskResponse
 
@@ -15,8 +16,19 @@ router = APIRouter()
 
 
 @router.get("/healthz", status_code=status.HTTP_200_OK)
-async def healthz() -> dict[str, str]:
-    return {"status": "ok"}
+async def healthz(request: Request) -> dict[str, Any]:
+    """Liveness probe. When the app container is attached, reports session checkpoint backend."""
+    body: dict[str, Any] = {"status": "ok"}
+    container = getattr(request.app.state, "container", None)
+    settings = getattr(container, "settings", None) if container is not None else None
+    lg = getattr(settings, "langgraph_redis", None) if settings is not None else None
+    if lg is not None:
+        body["sessionMemory"] = {
+            "backend": "redis",
+            "checkpointer": "AsyncRedisSaver",
+            "redisEndpoint": sanitize_redis_url_for_log(lg.redis_url),
+        }
+    return body
 
 
 @router.post(

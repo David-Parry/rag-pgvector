@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -8,9 +9,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
   MessageSquarePlus,
+  Moon,
+  PaintBucket,
   PanelLeft,
   SendHorizontal,
   Settings2,
+  Sun,
   Trash2,
   User,
   X,
@@ -44,6 +48,7 @@ type ChatMessage =
       citations: Citation[];
       usedContextCount: number;
       provider: string;
+      fromRedisSessionCache: boolean;
     }
   | {
       id: string;
@@ -89,6 +94,8 @@ function titleFromFirstQuestion(q: string): string {
 const SIDEBAR_COLLAPSED_KEY = "rag-pgvector-chat:sidebar-collapsed";
 const TOP_K_KEY = "rag-pgvector-chat:top-k";
 const SCORE_THRESHOLD_KEY = "rag-pgvector-chat:score-threshold";
+const THEME_KEY = "rag-pgvector-chat:theme";
+const MODE_KEY = "rag-pgvector-chat:mode";
 const DEFAULT_TOP_K = 6;
 const DEFAULT_SCORE_THRESHOLD = 0.8;
 const TOP_K_MIN = 1;
@@ -96,6 +103,46 @@ const TOP_K_MAX = 20;
 const SCORE_THRESHOLD_MIN = 0;
 const SCORE_THRESHOLD_MAX = 1.5;
 const SCORE_THRESHOLD_STEP = 0.05;
+
+type ThemeId =
+  | "aca-red"
+  | "ocean-depths"
+  | "sunset-boulevard"
+  | "forest-canopy"
+  | "minimalist"
+  | "golden-hour"
+  | "arctic-frost"
+  | "desert-rose"
+  | "tech-innovation"
+  | "botanical-garden"
+  | "midnight-galaxy";
+
+type Mode = "light" | "dark";
+
+const THEMES: { id: ThemeId; label: string; swatches: [string, string, string] }[] = [
+  { id: "aca-red", label: "ACA Red", swatches: ["#C8102E", "#FFFFFF", "#1F1F1F"] },
+  { id: "ocean-depths", label: "Ocean Depths", swatches: ["#2D8B8B", "#1A2332", "#F1FAEE"] },
+  { id: "sunset-boulevard", label: "Sunset Boulevard", swatches: ["#E76F51", "#F4A261", "#264653"] },
+  { id: "forest-canopy", label: "Forest Canopy", swatches: ["#2D4A2B", "#A4AC86", "#FAF9F6"] },
+  { id: "minimalist", label: "Minimalist", swatches: ["#36454F", "#FFFFFF", "#D3D3D3"] },
+  { id: "golden-hour", label: "Golden Hour", swatches: ["#F4A900", "#C1666B", "#4A403A"] },
+  { id: "arctic-frost", label: "Arctic Frost", swatches: ["#4A6FA5", "#FAFAFA", "#D4E4F7"] },
+  { id: "desert-rose", label: "Desert Rose", swatches: ["#D4A5A5", "#B87D6D", "#5D2E46"] },
+  { id: "tech-innovation", label: "Tech Innovation", swatches: ["#0066FF", "#00FFFF", "#1E1E1E"] },
+  { id: "botanical-garden", label: "Botanical Garden", swatches: ["#4A7C59", "#F9A620", "#B7472A"] },
+  { id: "midnight-galaxy", label: "Midnight Galaxy", swatches: ["#2B1E3E", "#4A4E8F", "#A490C2"] },
+];
+
+const DEFAULT_THEME: ThemeId = "aca-red";
+const DEFAULT_MODE: Mode = "light";
+
+function isThemeId(v: string | null): v is ThemeId {
+  return !!v && THEMES.some((t) => t.id === v);
+}
+
+function isMode(v: string | null): v is Mode {
+  return v === "light" || v === "dark";
+}
 
 function sessionInitialLetter(title: string): string {
   const t = title.trim();
@@ -118,7 +165,73 @@ export function ChatPanel() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [topK, setTopK] = useState<number>(DEFAULT_TOP_K);
   const [scoreThreshold, setScoreThreshold] = useState<number>(DEFAULT_SCORE_THRESHOLD);
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
+  const [mode, setMode] = useState<Mode>(DEFAULT_MODE);
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
+  const [themePickerPos, setThemePickerPos] = useState<{ top: number; right: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const themeTriggerRef = useRef<HTMLDivElement>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!themePickerOpen) return;
+    const recalc = () => {
+      const t = themeTriggerRef.current;
+      if (!t) return;
+      const r = t.getBoundingClientRect();
+      setThemePickerPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+    };
+    recalc();
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (themeTriggerRef.current?.contains(target)) return;
+      if (themeMenuRef.current?.contains(target)) return;
+      setThemePickerOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setThemePickerOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", recalc);
+    window.addEventListener("scroll", recalc, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", recalc);
+      window.removeEventListener("scroll", recalc, true);
+    };
+  }, [themePickerOpen]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(THEME_KEY);
+      if (isThemeId(stored)) setTheme(stored);
+      const storedMode = localStorage.getItem(MODE_KEY);
+      if (isMode(storedMode)) setMode(storedMode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* ignore */
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", mode === "dark");
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, [mode]);
 
   useEffect(() => {
     try {
@@ -298,7 +411,7 @@ export function ChatPanel() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ question: trimmed, topK, scoreThreshold }),
+        body: JSON.stringify({ question: trimmed, sessionId, topK, scoreThreshold }),
       });
 
       let json: unknown;
@@ -540,7 +653,7 @@ export function ChatPanel() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-border/60 border-b bg-card/40 px-3 py-3 backdrop-blur-sm md:px-4">
+        <header className="relative z-20 flex shrink-0 items-center justify-between gap-3 border-border/60 border-b bg-card/40 px-3 py-3 backdrop-blur-sm md:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               type="button"
@@ -574,6 +687,100 @@ export function ChatPanel() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setMode((m) => (m === "dark" ? "light" : "dark"))}
+              aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={mode === "dark" ? "Light mode" : "Dark mode"}
+            >
+              {mode === "dark" ? (
+                <Sun className="size-4" aria-hidden />
+              ) : (
+                <Moon className="size-4" aria-hidden />
+              )}
+            </Button>
+            <div ref={themeTriggerRef} className="inline-flex">
+              <Button
+                type="button"
+                variant={themePickerOpen ? "default" : "outline"}
+                size="sm"
+                onClick={() => setThemePickerOpen((v) => !v)}
+                aria-expanded={themePickerOpen}
+                aria-haspopup="menu"
+                title="Theme"
+              >
+                <PaintBucket className="mr-2 size-4" aria-hidden />
+                <span className="hidden sm:inline">Theme</span>
+              </Button>
+            </div>
+            {themePickerOpen && themePickerPos && typeof document !== "undefined"
+              ? createPortal(
+                  <div
+                    ref={themeMenuRef}
+                    role="menu"
+                    style={{
+                      position: "fixed",
+                      top: themePickerPos.top,
+                      right: themePickerPos.right,
+                      zIndex: 9999,
+                    }}
+                    className="w-64 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+                  >
+                    <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Palette
+                      </p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {mode}
+                      </p>
+                    </div>
+                    <ul className="max-h-[70vh] overflow-y-auto py-1">
+                      {THEMES.map((t) => {
+                        const active = t.id === theme;
+                        return (
+                          <li key={t.id}>
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={active}
+                              onClick={() => {
+                                setTheme(t.id);
+                                setThemePickerOpen(false);
+                              }}
+                              className={cn(
+                                "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                                active && "bg-accent"
+                              )}
+                            >
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span className="flex shrink-0 overflow-hidden rounded-md ring-1 ring-border">
+                                  {t.swatches.map((s, i) => (
+                                    <span
+                                      key={i}
+                                      className="block size-4"
+                                      style={{ backgroundColor: s }}
+                                      aria-hidden
+                                    />
+                                  ))}
+                                </span>
+                                <span className="truncate font-medium">{t.label}</span>
+                              </span>
+                              {active ? (
+                                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                  Active
+                                </span>
+                              ) : null}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>,
+                  document.body
+                )
+              : null}
             <Button
               type="button"
               variant={settingsOpen ? "default" : "outline"}
@@ -830,6 +1037,7 @@ function successToMessage(data: AskSuccessResponse): ChatMessage {
     citations: data.citations,
     usedContextCount: data.usedContextCount,
     provider: data.provider,
+    fromRedisSessionCache: data.fromRedisSessionCache,
   };
 }
 
@@ -872,13 +1080,23 @@ function MessageRow({ message: m }: { message: ChatMessage }) {
           {m.role === "assistant" && !("error" in m) ? (
             <>
               <Separator className="bg-border/80" />
-              <p className="text-muted-foreground text-xs">
-                <span className="text-primary font-medium">Provider:</span>{" "}
-                <span className="font-medium text-foreground">{m.provider}</span>
-                {" · "}
-                <span className="text-primary font-medium">Context:</span>{" "}
-                <span className="font-medium text-foreground">{m.usedContextCount}</span>
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-muted-foreground text-xs">
+                <p>
+                  <span className="text-primary font-medium">Provider:</span>{" "}
+                  <span className="font-medium text-foreground">{m.provider}</span>
+                  {" · "}
+                  <span className="text-primary font-medium">Context:</span>{" "}
+                  <span className="font-medium text-foreground">{m.usedContextCount}</span>
+                </p>
+                {m.fromRedisSessionCache ? (
+                  <span
+                    className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-medium text-amber-950 dark:text-amber-100"
+                    title="Answer and citations were reused from this chat session in Redis; no new similarity search or LLM call for this turn."
+                  >
+                    Session cache (Redis)
+                  </span>
+                ) : null}
+              </div>
               {m.citations.length > 0 ? (
                 <details className="rounded-md border border-border/60 bg-muted/30 text-xs">
                   <summary className="cursor-pointer px-2 py-2 font-medium text-primary hover:underline">

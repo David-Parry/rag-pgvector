@@ -45,6 +45,20 @@ def test_user_prompt_handles_empty_context() -> None:
     assert "QUESTION" in prompt
 
 
+def test_user_prompt_includes_prior_conversation_when_provided() -> None:
+    chunks = [_chunk(1, "only facts here")]
+    prompt = build_user_prompt(
+        "What about that?",
+        chunks,
+        prior_conversation="User: What is alpha?\nAssistant: Alpha is X.",
+    )
+    assert "PRIOR_CONVERSATION" in prompt
+    assert "User: What is alpha?" in prompt
+    assert "CONTEXT:" in prompt
+    assert "QUESTION:" in prompt
+    assert prompt.endswith("What about that?\n")
+
+
 def test_chunking_factory_uses_configured_size() -> None:
     from rag_core.chunking import build_text_splitter
 
