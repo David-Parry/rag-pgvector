@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import structlog
 
 from question_api.adapters.anthropic_llm import AnthropicLLMAdapter
-from question_api.adapters.ollama_llm import OllamaLLMAdapter
 from question_api.adapters.pgvector_retriever import PgVectorRetrieverAdapter
 from question_api.adapters.titan_embeddings import TitanEmbeddingsAdapter
 from question_api.domain.ask_service import AskService
@@ -40,20 +39,13 @@ async def build_container(settings: QuestionApiSettings) -> Container:
         logger=log,
     )
 
-    llm: LLMPort
-    provider_name: str
-    if settings.llm_provider == "ollama":
-        llm = OllamaLLMAdapter(settings.ollama)
-        provider_name = OllamaLLMAdapter.PROVIDER
-    else:
-        llm = AnthropicLLMAdapter(settings.anthropic)
-        provider_name = AnthropicLLMAdapter.PROVIDER
+    llm: LLMPort = AnthropicLLMAdapter(settings.anthropic)
 
     service = AskService(
         store=retriever,
         llm=llm,
         retrieval=settings.retrieval,
-        provider_name=provider_name,
+        provider_name=AnthropicLLMAdapter.PROVIDER,
         logger=log,
     )
     return Container(

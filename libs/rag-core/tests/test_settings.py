@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import pytest
 
-from rag_core.settings import AwsBedrockSettings, _parse_embedding_model_id
+from rag_core.settings import (
+    AwsBedrockSettings,
+    DeepEvalSettings,
+    _parse_embedding_model_id,
+)
 
 
 @pytest.mark.parametrize(
@@ -45,6 +49,7 @@ def test_aws_bedrock_settings_exposes_parsed_name_and_version() -> None:
     """The properties on ``AwsBedrockSettings`` flow through the parser."""
     settings = AwsBedrockSettings(
         BEDROCK_EMBEDDING_MODEL_ID="amazon.titan-embed-text-v2:0",
+        _env_file=None,
     )
     assert settings.embedding_model_name == "amazon.titan-embed-text"
     assert settings.embedding_model_version == "2.0"
@@ -53,6 +58,62 @@ def test_aws_bedrock_settings_exposes_parsed_name_and_version() -> None:
 def test_aws_bedrock_settings_handles_missing_revision() -> None:
     settings = AwsBedrockSettings(
         BEDROCK_EMBEDDING_MODEL_ID="amazon.titan-embed-text-v2",
+        _env_file=None,
     )
     assert settings.embedding_model_name == "amazon.titan-embed-text"
     assert settings.embedding_model_version == "2"
+
+
+def test_aws_bedrock_settings_supports_embedding_model_alias() -> None:
+    settings = AwsBedrockSettings(
+        EMBEDDING_MODEL="approved-embedding-profile",
+        _env_file=None,
+    )
+
+    assert settings.embedding_model_id == "approved-embedding-profile"
+
+
+def test_deepeval_settings_parse_comma_separated_grids() -> None:
+    settings = DeepEvalSettings(
+        DEEPEVAL_TOP_K_GRID="3,6,8",
+        DEEPEVAL_THRESHOLD_GRID="0.4,0.6,0.8",
+        _env_file=None,
+    )
+
+    assert settings.top_k_grid == [3, 6, 8]
+    assert settings.threshold_grid == [0.4, 0.6, 0.8]
+
+
+def test_deepeval_settings_parse_json_grids() -> None:
+    settings = DeepEvalSettings(
+        DEEPEVAL_TOP_K_GRID="[3, 6, 8]",
+        DEEPEVAL_THRESHOLD_GRID="[0.4, 0.6, 0.8]",
+        _env_file=None,
+    )
+
+    assert settings.top_k_grid == [3, 6, 8]
+    assert settings.threshold_grid == [0.4, 0.6, 0.8]
+
+
+def test_deepeval_settings_verbose_mode_defaults_off() -> None:
+    settings = DeepEvalSettings(_env_file=None)
+
+    assert settings.verbose_mode is False
+
+
+def test_deepeval_settings_reads_verbose_mode() -> None:
+    settings = DeepEvalSettings(DEEPEVAL_VERBOSE_MODE="true", _env_file=None)
+
+    assert settings.verbose_mode is True
+
+
+def test_deepeval_settings_report_file_type_defaults_to_html() -> None:
+    settings = DeepEvalSettings(_env_file=None)
+
+    assert settings.report_file_type == "html"
+
+
+def test_deepeval_settings_reads_html_report_file_type() -> None:
+    settings = DeepEvalSettings(DEEPEVAL_REPORT_FILE_TYPE="html", _env_file=None)
+
+    assert settings.report_file_type == "html"

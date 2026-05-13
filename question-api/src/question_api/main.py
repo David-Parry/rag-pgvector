@@ -21,7 +21,7 @@ def create_app(settings: QuestionApiSettings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        log.info("question_api.starting", llm_provider=resolved.llm_provider)
+        log.info("question_api.starting", llm_model=resolved.anthropic.model)
         container = await build_container(resolved)
         app.state.container = container
         try:
@@ -36,7 +36,7 @@ def create_app(settings: QuestionApiSettings | None = None) -> FastAPI:
         version="0.1.0",
         summary=(
             "Strictly-grounded RAG question answering: Bedrock Titan v2 retrieval "
-            "over pgvector with switchable Anthropic / Ollama LLMs."
+            "over pgvector with Anthropic Claude answer generation."
         ),
         lifespan=lifespan,
     )

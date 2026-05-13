@@ -1,0 +1,15 @@
+[
+  {
+    "question": "What conditions does the Consolidated Appropriations Act place on U.S. assistance to the West Bank and Gaza?",
+    "expected_output": "Section 7039 requires the Secretary of State to certify oversight procedures before the initial obligation of bilateral West Bank and Gaza Program funds, vet assistance so it is not provided to or through persons or entities tied to terrorist activity, prohibit funds from honoring terrorists or named terrorist-linked educational institutions, require reporting before security assistance is obligated, and require annual audits of contractors, grantees, subcontractors, and sub-grantees.",
+    "expected_retrieval_context": [
+      "Sec. 7039. (a) Oversight.--For fiscal year 2018, 30 days prior to the initial obligation of funds for the bilateral West Bank and Gaza Program, the Secretary of State shall certify",
+      "Prior to the obligation of funds appropriated by this Act under the heading ``Economic Support Fund'' for assistance for the West Bank and Gaza, the Secretary of State shall take all appropriate steps to ensure that such assistance is not provided to or through any individual, private or government entity, or educational institution",
+      "None of the funds appropriated under titles III through VI of this Act for assistance under the West Bank and Gaza Program may be made available for--",
+      "audits of all contractors and grantees, and significant subcontractors and sub-grantees, under the West Bank and Gaza Program, are conducted at least on an annual basis"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  }
+]

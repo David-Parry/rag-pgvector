@@ -3,24 +3,24 @@
 
 aws:
   auth:
-    mode: bearer
-    bearerToken: "REPLACE_WITH_AWS_BEARER_TOKEN_BEDROCK"
+    mode: accessKey
+    accessKeyId: "REPLACE_WITH_AWS_ACCESS_KEY_ID"
+    secretAccessKey: "REPLACE_WITH_AWS_SECRET_ACCESS_KEY"
+    sessionToken: "REPLACE_WITH_AWS_SESSION_TOKEN_IF_USING_TEMPORARY_CREDENTIALS"
 
 bedrock:
   region: us-east-1
   embeddingModelId: amazon.titan-embed-text-v2:0
+  embeddingBearerToken: "REPLACE_WITH_EMBEDDING_ACCOUNT_BEDROCK_API_KEY"
   embeddingDimensions: 1024
+
+anthropic:
+  apiKey: "REPLACE_WITH_DIRECT_ANTHROPIC_API_KEY"
+  model: claude-sonnet-4-5
 
 govinfo:
   apiKey: "REPLACE_WITH_GOVINFO_API_KEY"
 
-anthropic:
-  apiKey: "REPLACE_WITH_ANTHROPIC_API_KEY"
-  model: claude-sonnet-4-5
-
 qa:
-  llmProvider: anthropic
-  ollamaBaseUrl: http://host.docker.internal:11434
-  ollamaModel: llama3.1:8b
   topK: 5
   scoreThreshold: 0.25

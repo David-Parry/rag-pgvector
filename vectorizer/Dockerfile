@@ -1,9 +1,14 @@
-# syntax=docker/dockerfile:1.7
 # Multi-stage build for the vectorizer pod.
 # Build context MUST be the monorepo root because vectorizer depends on the
 # rag-core workspace member.
 #
 #   docker build -t rag-pgvector/vectorizer:0.1.0 -f vectorizer/Dockerfile .
+#
+# Optional corporate TLS — see documentation/DOCKER_PYPI_MIRROR.md
+#
+# When the index URL contains `user:token@`, the builder also merges those credentials
+# into `/root/.netrc` and uses a credential-free `UV_DEFAULT_INDEX` so wheel downloads
+# to the same host are authenticated (see `scripts/docker/prepare_artifactory_for_uv.py`).
 #
 # Docker Desktop's built-in Kubernetes shares the Docker daemon, so this image
 # is visible to the cluster without any registry push or load step.
@@ -18,11 +23,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.7 /uv /usr/local/bin/uv
+# 0.5.x mishandles some Artifactory URL joins; 0.9.x+ improves index auth and PyPI compat.
+COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv
 
 WORKDIR /workspace
 
 COPY pyproject.toml uv.lock ./
+COPY scripts/docker/rewrite_uv_lock_for_mirror.py scripts/docker/rewrite_uv_lock_for_public_pypi.py scripts/docker/prepare_artifactory_for_uv.py scripts/docker/check_uv_lock_artifact_access.py scripts/docker/uv_sync_with_fallback.sh scripts/docker/
 COPY libs/rag-core/pyproject.toml libs/rag-core/README.md libs/rag-core/
 COPY libs/rag-core/src libs/rag-core/src
 COPY vectorizer/pyproject.toml vectorizer/README.md vectorizer/
@@ -30,18 +37,14 @@ COPY vectorizer/src vectorizer/src
 COPY question-api/pyproject.toml question-api/README.md question-api/
 COPY question-api/src question-api/src
 
-RUN --mount=type=secret,id=custom_ca,dst=/tmp/custom-ca.crt,required=false \
-    apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates \
- && if [ -f /tmp/custom-ca.crt ]; then \
-      cp /tmp/custom-ca.crt /usr/local/share/ca-certificates/custom-ca.crt; \
-    fi \
- && update-ca-certificates \
- && if [ -f /tmp/custom-ca.crt ]; then \
-      cat /tmp/custom-ca.crt >> /etc/ssl/certs/ca-certificates.crt; \
-    fi \
- && rm -rf /var/lib/apt/lists/* \
- && uv sync --package vectorizer --frozen --no-dev
+# Optional: default PEP 503 index (JFrog virtual PyPI, Nexus, etc.). Prefer secret
+# `uv_default_index` (one line, no newline) over ARG to avoid creds in image history.
+ARG UV_DEFAULT_INDEX=
+
+RUN --mount=type=secret,id=uv_default_index,required=false \
+    --mount=type=secret,id=ssl_cert_bundle,required=false \
+    --mount=type=secret,id=netrc,required=false \
+    sh scripts/docker/uv_sync_with_fallback.sh vectorizer
 
 # ----- Stage 2: runtime -------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime

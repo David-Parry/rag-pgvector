@@ -16,11 +16,13 @@ CHART_PATH = Path(__file__).resolve().parent.parent / "infra" / "helm" / "rag-pg
 
 REQUIRED_VALUES = [
     "--set",
+    "aws.auth.mode=bearer",
+    "--set",
     "aws.auth.bearerToken=fake-bearer",
     "--set",
-    "govinfo.apiKey=fake-govinfo",
-    "--set",
     "anthropic.apiKey=fake-anthropic",
+    "--set",
+    "govinfo.apiKey=fake-govinfo",
 ]
 
 
@@ -44,15 +46,12 @@ def test_helm_lint_passes() -> None:
     assert result.returncode == 0, f"helm lint failed:\n{result.stdout}\n{result.stderr}"
 
 
-@pytest.mark.parametrize("provider", ["anthropic", "ollama"])
-def test_helm_template_renders_for_each_llm_provider(provider: str) -> None:
+def test_helm_template_renders() -> None:
     result = _run(
         "template",
         "rag",
         str(CHART_PATH),
         *REQUIRED_VALUES,
-        "--set",
-        f"qa.llmProvider={provider}",
     )
     assert result.returncode == 0, f"helm template failed:\n{result.stderr}"
     rendered = result.stdout
@@ -61,7 +60,9 @@ def test_helm_template_renders_for_each_llm_provider(provider: str) -> None:
     assert "name: vectorizer" in rendered
     assert "name: question-api" in rendered
     assert "AWS_BEARER_TOKEN_BEDROCK" in rendered
-    assert f'value: "{provider}"' in rendered
+    assert "EMBEDDING_MODEL" in rendered
+    assert "ANTHROPIC_API_KEY" in rendered
+    assert "ANTHROPIC_DIRECT_MODEL" in rendered
 
 
 def test_helm_template_supports_irsa_mode_without_aws_keys() -> None:
@@ -72,14 +73,60 @@ def test_helm_template_supports_irsa_mode_without_aws_keys() -> None:
         "--set",
         "aws.auth.mode=irsa",
         "--set",
-        "aws.auth.irsaRoleArn=arn:aws:iam::111122223333:role/rag-bedrock",
+        "aws.auth.irsaRoleArn=arn:aws:iam::111122223333:role/rag-embeddings",
+        "--set",
+        "anthropic.apiKey=fake-anthropic",
         "--set",
         "govinfo.apiKey=fake",
-        "--set",
-        "anthropic.apiKey=fake",
     )
     assert result.returncode == 0, result.stderr
     rendered = result.stdout
     assert "eks.amazonaws.com/role-arn" in rendered
     assert "AWS_BEARER_TOKEN_BEDROCK" not in rendered
     assert "AWS_ACCESS_KEY_ID" not in rendered
+
+
+def test_helm_template_supports_none_mode_without_aws_keys() -> None:
+    result = _run(
+        "template",
+        "rag",
+        str(CHART_PATH),
+        "--set",
+        "aws.auth.mode=none",
+        "--set",
+        "anthropic.apiKey=fake-anthropic",
+        "--set",
+        "govinfo.apiKey=fake",
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = result.stdout
+    assert "AWS_BEARER_TOKEN_BEDROCK" not in rendered
+    assert "AWS_ACCESS_KEY_ID" not in rendered
+    assert "AWS_SECRET_ACCESS_KEY" not in rendered
+
+
+def test_helm_template_supports_temporary_session_credentials() -> None:
+    result = _run(
+        "template",
+        "rag",
+        str(CHART_PATH),
+        "--set",
+        "aws.auth.mode=accessKey",
+        "--set",
+        "aws.auth.accessKeyId=ASIA_TEST",
+        "--set",
+        "aws.auth.secretAccessKey=fake-secret",
+        "--set",
+        "aws.auth.sessionToken=fake-session-token",
+        "--set",
+        "bedrock.embeddingBearerToken=fake-embedding-bearer",
+        "--set",
+        "anthropic.apiKey=fake-anthropic",
+        "--set",
+        "govinfo.apiKey=fake",
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = result.stdout
+    assert "AWS_ACCESS_KEY_ID" in rendered
+    assert "AWS_SECRET_ACCESS_KEY" in rendered
+    assert "AWS_SESSION_TOKEN" in rendered

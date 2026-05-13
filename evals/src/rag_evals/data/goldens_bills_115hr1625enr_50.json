@@ -1,0 +1,674 @@
+[
+  {
+    "question": "What conditions does the Consolidated Appropriations Act place on U.S. assistance to the West Bank and Gaza?",
+    "expected_output": "Section 7039 requires the Secretary of State to certify oversight procedures before the initial obligation of bilateral West Bank and Gaza Program funds, vet assistance so it is not provided to or through persons or entities tied to terrorist activity, prohibit funds from honoring terrorists or named terrorist-linked educational institutions, require reporting before security assistance is obligated, and require annual audits of contractors, grantees, subcontractors, and sub-grantees.",
+    "expected_retrieval_context": [
+      "Sec. 7039. (a) Oversight.--For fiscal year 2018, 30 days prior to the initial obligation of funds for the bilateral West Bank and Gaza Program, the Secretary of State shall certify",
+      "Prior to the obligation of funds appropriated by this Act under the heading ``Economic Support Fund'' for assistance for the West Bank and Gaza, the Secretary of State shall take all appropriate steps to ensure that such assistance is not provided to or through any individual, private or government entity, or educational institution",
+      "None of the funds appropriated under titles III through VI of this Act for assistance under the West Bank and Gaza Program may be made available for--",
+      "audits of all contractors and grantees, and significant subcontractors and sub-grantees, under the West Bank and Gaza Program, are conducted at least on an annual basis"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What restrictions apply to assistance for the Palestinian Authority?",
+    "expected_output": "Section 7040 prohibits funds appropriated under chapter 4 of part II of the Foreign Assistance Act from being obligated or spent to provide funds to the Palestinian Authority unless the President certifies a national-security waiver. If the waiver is used, it lasts no more than six months at a time, may not extend beyond 12 months after enactment, and requires reporting on the waiver justification, spending purposes, accounting procedures, and Palestinian Authority actions to arrest terrorists, confiscate weapons, and dismantle terrorist infrastructure.",
+    "expected_retrieval_context": [
+      "Sec. 7040. (a) Prohibition of Funds.--None of the funds appropriated by this Act to carry out the provisions of chapter 4 of part II of the Foreign Assistance Act of 1961 may be obligated or expended with respect to providing funds to the Palestinian Authority.",
+      "the President certifies in writing to the Speaker of the House of Representatives, the President pro tempore of the Senate, and the Committees on Appropriations that waiving such prohibition is important to the national security interest of the United States",
+      "Any waiver pursuant to subsection (b) shall be effective for no more than a period of 6 months at a time",
+      "the report shall also detail the steps the Palestinian Authority has taken to arrest terrorists, confiscate weapons and dismantle the terrorist infrastructure"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 7038 prohibit regarding the Palestinian Broadcasting Corporation?",
+    "expected_output": "Section 7038 prohibits funds appropriated or otherwise made available by the Act from being used to provide equipment, technical support, consulting services, or any other form of assistance to the Palestinian Broadcasting Corporation.",
+    "expected_retrieval_context": [
+      "Sec. 7038.  None of the funds appropriated or otherwise made available by this Act may be used to provide equipment, technical support, consulting services, or any other form of assistance to the Palestinian Broadcasting Corporation."
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "How does section 7040 restrict assistance to Hamas, Hamas-controlled entities, and the Palestine Liberation Organization?",
+    "expected_output": "Section 7040 prohibits funds in titles III through VI from being obligated for salaries of Palestinian Authority personnel located in Gaza or from being obligated or spent for assistance to Hamas, entities effectively controlled by Hamas, Hamas-including power-sharing governments, or governments resulting from agreements with Hamas over which Hamas has undue influence. It permits assistance to a power-sharing government only if the President certifies that the government and all ministers publicly accept and comply with the principles in section 620K(b)(1)(A) and (B) of the Foreign Assistance Act, and it also bars assistance for the Palestine Liberation Organization.",
+    "expected_retrieval_context": [
+      "None of the funds appropriated in titles III through VI of this Act may be obligated for salaries of personnel of the Palestinian Authority located in Gaza",
+      "or may be obligated or expended for assistance to Hamas or any entity effectively controlled by Hamas, any power-sharing government of which Hamas is a member",
+      "assistance may be provided to a power-sharing government only if the President certifies and reports to the Committees on Appropriations",
+      "None of the funds appropriated under titles III through VI of this Act may be obligated for assistance for the Palestine Liberation Organization."
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "Under section 1004, when may Economic Support Fund assistance for the West Bank and Gaza that directly benefits the Palestinian Authority be made available?",
+    "expected_output": "Section 1004 allows Economic Support Fund assistance for the West Bank and Gaza that directly benefits the Palestinian Authority only if, within 30 days after enactment and every 180 days thereafter, the Secretary of State certifies that the Palestinian Authority, the Palestine Liberation Organization, and successor or affiliated organizations are taking credible steps to end violence against Israeli and U.S. citizens, have terminated terrorism-related payments to imprisoned individuals and to families of individuals who died committing terrorism, have revoked or invalidated compensation systems based on sentence or incarceration period, and are publicly condemning violence and investigating or cooperating in investigations to bring perpetrators to justice.",
+    "expected_retrieval_context": [
+      "SEC. 1004. LIMITATION ON ASSISTANCE TO THE WEST BANK AND GAZA.",
+      "available for assistance for the West Bank and Gaza that directly benefits the Palestinian Authority may only be made available for such purpose if",
+      "the Secretary of State certifies in writing to the appropriate congressional committees that the Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations--",
+      "are taking credible steps to end acts of violence against Israeli citizens and United States citizens",
+      "have terminated payments for acts of terrorism against Israeli citizens and United States citizens",
+      "are publicly condemning such acts of violence and are taking steps to investigate or are cooperating in investigations of such acts to bring the perpetrators to justice"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the Secretary of State certify if the President waives the section 7040 prohibition on funds for the Palestinian Authority?",
+    "expected_output": "If the President exercises the waiver under section 7040(b), section 7040(e) requires the Secretary of State to certify and report before funds are obligated that the Palestinian Authority has established a single treasury account through which all Palestinian Authority financing and financing mechanisms flow, that no parallel financing mechanisms exist outside that treasury account, that there is a single comprehensive civil service roster and payroll, and that the Palestinian Authority is countering incitement against Israelis while supporting peace, coexistence, and security cooperation with Israel.",
+    "expected_retrieval_context": [
+      "If the President exercises the waiver authority under subsection (b), the Secretary of State must certify and report to the Committees on Appropriations prior to the obligation of funds",
+      "the Palestinian Authority has established a single treasury account for all Palestinian Authority financing and all financing mechanisms flow through this account",
+      "no parallel financing mechanisms exist outside of the Palestinian Authority treasury account",
+      "there is a single comprehensive civil service roster and payroll",
+      "the Palestinian Authority is acting to counter incitement of violence against Israelis and is supporting activities aimed at promoting peace, coexistence, and security cooperation with Israel"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What exceptions does section 1004 make to the limitation on assistance for the West Bank and Gaza?",
+    "expected_output": "Section 1004(b) excepts payments to the East Jerusalem Hospital Network, wastewater projects up to $5,000,000 in a fiscal year, and vaccination programs or activities for children up to $500,000 in a fiscal year. The Secretary of State must notify the appropriate congressional committees in writing at least 15 days before making funds available for those exceptions.",
+    "expected_retrieval_context": [
+      "(b) Exception.--",
+      "the limitation on assistance under subsection (a) shall not apply to--",
+      "payments made to the East Jerusalem Hospital Network",
+      "assistance for wastewater projects not exceeding $5,000,000 in any one fiscal year",
+      "assistance for any other program, project, or activity that provides vaccinations to children not exceeding $500,000 in any one fiscal year",
+      "The Secretary of State shall notify in writing the appropriate congressional committees not later than 15 days prior to making funds available"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "How does section 1004 treat funds withheld because of Palestinian Authority payments for acts of terrorism?",
+    "expected_output": "Section 1004(c) provides that funds withheld under the section satisfy similar withholding or reduction requirements under other laws related to Palestinian Authority payments for acts of terrorism and must be at least the amount required by those other laws. Section 1004(d) lets withheld funds remain available for two additional years, allows them to be used for West Bank and Gaza assistance directly benefiting the Palestinian Authority once the Secretary certifies the subsection (a) conditions are met, and later permits unused funds to be split between assistance not deemed to benefit the Palestinian Authority and purposes other than West Bank and Gaza assistance.",
+    "expected_retrieval_context": [
+      "Funds withheld pursuant to this section--",
+      "shall be deemed to satisfy any similar withholding or reduction required under any other provision of law relating to the Palestinian Authority's payments for acts of terrorism",
+      "shall be in an amount that is not less than the total amount required by such other provision of law",
+      "Funds withheld pursuant to this section are authorized to remain available for an additional 2 years",
+      "such funds may not be made available for any purpose other than for assistance for the West Bank and Gaza that directly benefits the Palestinian Authority",
+      "50 percent for purposes of assistance other than that deemed benefiting the Palestinian Authority"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What report is required if the Secretary of State cannot certify that the section 1004 conditions have been met?",
+    "expected_output": "Under section 1004(e), if the Secretary of State cannot certify that the Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations have met the subsection (a) conditions, the Secretary must submit a report to the appropriate congressional committees within 15 days. The report must explain why the certification could not be made, provide the definition of acts of terrorism used for the payment-related determination, and state the total amount of funds to be withheld. The report is submitted in unclassified form but may include a classified annex.",
+    "expected_retrieval_context": [
+      "If the Secretary of State is unable to certify in writing to the appropriate congressional committees",
+      "not later than 15 days after the date on which the Secretary is unable to make such certification",
+      "The reasons why the Secretary was unable to certify in writing that such organizations have met such requirements",
+      "The definition of ``acts of terrorism'' that the Secretary used",
+      "The total amount of funds to be withheld",
+      "The report required by this subsection shall be submitted in unclassified form but may include a classified annex"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What initial report does section 1005 require after enactment?",
+    "expected_output": "Section 1005 requires the Secretary of State, not later than 60 days after enactment, to submit a report to the appropriate congressional committees describing programs, projects, and activities funded by the United States Government that have been or will be suspended because funds were withheld under section 1004. The report must be unclassified but may include a classified annex.",
+    "expected_retrieval_context": [
+      "SEC. 1005. INITIAL REPORT.",
+      "Not later than 60 days after the date of the enactment of this Act",
+      "the Secretary of State shall submit to the appropriate congressional committees a report",
+      "describing those programs, projects, and activities funded by the United States Government that have been or will be suspended by reason of withholding of funds under section 1004",
+      "The report required by subsection (a) shall be submitted in unclassified form but may include a classified annex"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What elements must the annual report under section 1006 include?",
+    "expected_output": "Section 1006 requires the Secretary of State, within 180 days after enactment and annually for six years, to report estimates of Palestinian Authority, Palestine Liberation Organization, and successor or affiliated organization payments for acts of terrorism to imprisoned individuals and to families of deceased individuals who committed terrorism; an overview of laws, decrees, regulations, or documents authorizing or implementing those payments; descriptions of U.S. engagement to confirm revocation of such payment authorities; and U.S. engagement with other governments and the United Nations to highlight the issue and urge others to call for those payments to cease.",
+    "expected_retrieval_context": [
+      "SEC. 1006. ANNUAL REPORT.",
+      "Not later than 180 days after the date of the enactment of this Act, and annually thereafter for 6 years",
+      "An estimate of the amount expended by the Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations during the previous calendar year as payments for acts of terrorism",
+      "An estimate of the amount expended by the Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations during the previous calendar year as payments to the families of deceased individuals who committed an act of terrorism",
+      "An overview of Palestinian laws, decrees, regulations, or documents in effect the previous calendar year that authorize or implement any payments",
+      "to highlight the issue of Palestinian payments for acts of terrorism and to urge other nations to join the United States in calling on the Palestinian Authority to immediately cease such payments"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "Under section 7036, when may funds support a Palestinian state?",
+    "expected_output": "Section 7036 bars funds under titles III through VI from supporting a Palestinian state unless the Secretary of State determines and certifies that the governing entity has demonstrated a firm commitment to peaceful coexistence with Israel, is taking measures to counter terrorism and terrorist financing in the West Bank and Gaza, and that the Palestinian Authority or new governing entity is working with regional countries toward a just, lasting, and comprehensive peace.",
+    "expected_retrieval_context": [
+      "Sec. 7036. (a) Limitation on Assistance.--None of the funds appropriated under titles III through VI of this Act may be provided to support a Palestinian state unless",
+      "has demonstrated a firm commitment to peaceful co-existence with the State of Israel",
+      "is taking appropriate measures to counter terrorism and terrorist financing in the West Bank and Gaza",
+      "the Palestinian Authority (or the governing entity of a new Palestinian state) is working with other countries in the region"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What peace framework elements does section 7036 identify for a Palestinian state?",
+    "expected_output": "Section 7036 identifies a peace framework involving termination of claims or belligerency, respect for sovereignty and territorial integrity, the right to live within secure recognized boundaries free from threats or force, freedom of navigation through international waterways, and a framework for a just refugee settlement.",
+    "expected_retrieval_context": [
+      "termination of all claims or states of belligerency",
+      "respect for and acknowledgment of the sovereignty, territorial integrity, and political independence of every state in the area",
+      "their right to live in peace within secure and recognized boundaries free from threats or acts of force",
+      "freedom of navigation through international waterways",
+      "a framework for achieving a just settlement of the refugee problem"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What governance expectations does section 7036 express as the sense of Congress?",
+    "expected_output": "Section 7036 states that the governing entity should enact a constitution assuring rule of law, an independent judiciary, and respect for human rights, and should enact laws and regulations assuring transparent and accountable governance.",
+    "expected_retrieval_context": [
+      "(b) Sense of Congress.--It is the sense of Congress that the governing entity should enact a constitution",
+      "assuring the rule of law, an independent judiciary, and respect for human rights",
+      "should enact other laws and regulations assuring transparent and accountable governance"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What waiver and reform exemption does section 7036 provide?",
+    "expected_output": "Section 7036 allows the President to waive the limitation if it is important to the national security interest of the United States. It also exempts assistance intended to help reform the Palestinian Authority and affiliated institutions or governing entity so they can meet the section's requirements, consistent with section 7040.",
+    "expected_retrieval_context": [
+      "The President may waive subsection (a) if the President determines that it is important to the national security interest of the United States",
+      "The restriction in subsection (a) shall not apply to assistance intended to help reform the Palestinian Authority and affiliated institutions",
+      "consistent with the provisions of section 7040 of this Act"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 7037 prohibit the United States from creating in Jerusalem?",
+    "expected_output": "Section 7037 prohibits funds under titles II through VI from being used to create any new U.S. department or agency office in Jerusalem for conducting official U.S. Government business with the Palestinian Authority over Gaza and Jericho or a successor Palestinian governing entity, while allowing acquisition of additional space for the existing Consulate General.",
+    "expected_retrieval_context": [
+      "Sec. 7037.  None of the funds appropriated under titles II through VI of this Act may be obligated or expended to create in any part of Jerusalem a new office",
+      "for the purpose of conducting official United States Government business with the Palestinian Authority over Gaza and Jericho",
+      "this restriction shall not apply to the acquisition of additional space for the existing Consulate General in Jerusalem"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "Where should official meetings with Palestinian Authority officials occur under section 7037?",
+    "expected_output": "Section 7037 says official meetings between U.S. officers or employees and Palestinian Authority officials or successor Palestinian governing entities for U.S. Government business should continue to occur in locations other than Jerusalem, while U.S. officials may continue meeting Palestinians in Jerusalem on other subjects, including social contacts and incidental discussions.",
+    "expected_retrieval_context": [
+      "meetings between officers and employees of the United States and officials of the Palestinian Authority",
+      "for the purpose of conducting official United States Government business with such authority should continue to take place in locations other than Jerusalem",
+      "may continue to meet in Jerusalem on other subjects with Palestinians",
+      "have social contacts, and have incidental discussions"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What access must the Comptroller General have before initial West Bank and Gaza Program funds are obligated under section 7039?",
+    "expected_output": "Before the initial obligation of bilateral West Bank and Gaza Program funds, section 7039 requires the Secretary of State to certify that procedures exist to assure the Comptroller General has access to appropriate U.S. financial information to review the use of Economic Support Fund assistance for the program.",
+    "expected_retrieval_context": [
+      "30 days prior to the initial obligation of funds for the bilateral West Bank and Gaza Program",
+      "the Secretary of State shall certify to the Committees on Appropriations that procedures have been established",
+      "to assure the Comptroller General of the United States will have access to appropriate United States financial information",
+      "to review the uses of United States assistance for the Program funded under the heading ``Economic Support Fund''"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What vetting must occur before Economic Support Fund assistance for the West Bank and Gaza is obligated?",
+    "expected_output": "Section 7039 requires the Secretary of State to take appropriate steps to ensure assistance is not provided to or through individuals, private or government entities, or educational institutions that the Secretary knows or has reason to believe advocate, plan, sponsor, engage in, or have engaged in terrorist activity, or private entities and educational institutions with governing officials tied to terrorist activity or designated foreign terrorist organizations.",
+    "expected_retrieval_context": [
+      "Prior to the obligation of funds appropriated by this Act under the heading ``Economic Support Fund'' for assistance for the West Bank and Gaza",
+      "shall take all appropriate steps to ensure that such assistance is not provided to or through any individual, private or government entity, or educational institution",
+      "advocates, plans, sponsors, engages in, or has engaged in, terrorist activity",
+      "member of a designated foreign terrorist organization"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 7039 require the Secretary of State to do if a recipient is involved in terrorist activity?",
+    "expected_output": "Section 7039 requires the Secretary of State, as appropriate, to establish procedures for vetting and to terminate assistance to any individual, entity, or educational institution determined to be involved in or advocating terrorist activity.",
+    "expected_retrieval_context": [
+      "the Secretary of State shall, as appropriate, establish procedures specifying the steps to be taken in carrying out this subsection",
+      "shall terminate assistance to any individual, entity, or educational institution",
+      "which the Secretary has determined to be involved in or advocating terrorist activity"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What recognition or naming activities are prohibited under section 7039?",
+    "expected_output": "Section 7039 prohibits West Bank and Gaza Program assistance from being used to recognize or honor individuals who commit or have committed terrorism, and from assisting any educational institution in the West Bank or Gaza named after someone the Secretary of State determines committed an act of terrorism.",
+    "expected_retrieval_context": [
+      "Recognition of acts of terrorism.--None of the funds appropriated under titles III through VI of this Act for assistance under the West Bank and Gaza Program may be made available",
+      "the purpose of recognizing or otherwise honoring individuals who commit, or have committed acts of terrorism",
+      "any educational institution located in the West Bank or Gaza that is named after an individual",
+      "the Secretary of State determines has committed an act of terrorism"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What report is required before security assistance for the West Bank and Gaza can be obligated under section 7039?",
+    "expected_output": "Section 7039 bars obligation of security assistance for the West Bank and Gaza until the Secretary of State reports to the Committees on Appropriations on benchmarks established for that security assistance and on the extent of Palestinian compliance with those benchmarks.",
+    "expected_retrieval_context": [
+      "none of the funds made available by this or prior appropriations Acts",
+      "may be made available for obligation for security assistance for the West Bank and Gaza",
+      "until the Secretary of State reports to the Committees on Appropriations",
+      "the benchmarks that have been established for security assistance for the West Bank and Gaza",
+      "the extent of Palestinian compliance with such benchmarks"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What audit responsibilities does section 7039 assign to USAID for the West Bank and Gaza Program?",
+    "expected_output": "Section 7039 requires the USAID Administrator to ensure that federal or non-federal audits of all contractors and grantees, plus significant subcontractors and sub-grantees, under the West Bank and Gaza Program are conducted at least annually to ensure compliance. It also allows up to $1,000,000 for the USAID Office of Inspector General for audits, investigations, and related activities.",
+    "expected_retrieval_context": [
+      "The Administrator of the United States Agency for International Development shall ensure",
+      "audits of all contractors and grantees, and significant subcontractors and sub-grantees",
+      "under the West Bank and Gaza Program, are conducted at least on an annual basis",
+      "up to $1,000,000 may be used by the Office of Inspector General of the United States Agency for International Development"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the Comptroller General audit under section 7039 after the required certification?",
+    "expected_output": "After the certification in section 7039(a), the Comptroller General must audit and investigate the treatment, handling, and uses of all funds for the bilateral West Bank and Gaza Program, including cash transfer assistance, and address compliance with vetting and prohibition requirements plus all programs, projects, activities, obligations, and expenditures under the program.",
+    "expected_retrieval_context": [
+      "Subsequent to the certification specified in subsection (a), the Comptroller General of the United States shall conduct an audit and an investigation",
+      "treatment, handling, and uses of all funds for the bilateral West Bank and Gaza Program",
+      "including all funds provided as cash transfer assistance",
+      "the extent to which such Program complies with the requirements of subsections (b) and (c)",
+      "an examination of all programs, projects, and activities carried out under such Program, including both obligations and expenditures"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What notification procedures and follow-up report does section 7039 require for West Bank and Gaza funds?",
+    "expected_output": "Section 7039 states that West Bank and Gaza funds are subject to the regular notification procedures of the Committees on Appropriations. It also requires the Secretary of State, within 180 days after enactment, to update the report contained in section 2106 of chapter 2 of title II of the 2005 emergency supplemental appropriations law.",
+    "expected_retrieval_context": [
+      "Funds made available in this Act for West Bank and Gaza shall be subject to the regular notification procedures of the Committees on Appropriations",
+      "Not later than 180 days after enactment of this Act",
+      "the Secretary of State shall submit a report to the Committees on Appropriations updating the report contained in section 2106",
+      "Emergency Supplemental Appropriations Act for Defense, the Global War on Terror, and Tsunami Relief, 2005"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "How long can a section 7040 waiver for Palestinian Authority funding remain effective?",
+    "expected_output": "Section 7040 states that a waiver of the prohibition on funding the Palestinian Authority is effective for no more than six months at a time and cannot apply beyond 12 months after enactment of the Act.",
+    "expected_retrieval_context": [
+      "(c) Period of Application of Waiver.--Any waiver pursuant to subsection (b)",
+      "shall be effective for no more than a period of 6 months at a time",
+      "shall not apply beyond 12 months after the enactment of this Act"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the President report when exercising the section 7040 waiver authority?",
+    "expected_output": "When exercising the section 7040 waiver, the President must report to the Committees on Appropriations with the justification for the waiver, the purposes for which funds will be spent, accounting procedures to ensure proper disbursement, and steps the Palestinian Authority has taken to arrest terrorists, confiscate weapons, and dismantle terrorist infrastructure.",
+    "expected_retrieval_context": [
+      "Whenever the waiver authority pursuant to subsection (b) is exercised",
+      "the President shall submit a report to the Committees on Appropriations",
+      "detailing the justification for the waiver",
+      "the purposes for which the funds will be spent",
+      "the accounting procedures in place to ensure that the funds are properly disbursed",
+      "the steps the Palestinian Authority has taken to arrest terrorists, confiscate weapons and dismantle the terrorist infrastructure"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What follow-up reporting is required after certification of assistance to a Hamas-including power-sharing government under section 7040?",
+    "expected_output": "When certification for assistance to a power-sharing government is exercised under section 7040, the Secretary of State must report to the Committees on Appropriations within 120 days and quarterly thereafter on whether the government and its ministers continue complying with section 620K(b)(1)(A) and (B), and must detail the amount, purposes, delivery mechanisms, and full accounting of any direct support.",
+    "expected_retrieval_context": [
+      "Whenever the certification pursuant to paragraph (2) is exercised",
+      "the Secretary of State shall submit a report to the Committees on Appropriations within 120 days of the certification and every quarter thereafter",
+      "whether such government, including all of its ministers or such equivalent are continuing to comply",
+      "detail the amount, purposes and delivery mechanisms for any assistance provided",
+      "a full accounting of any direct support of such government"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What purposes must West Bank and Gaza Economic Support Fund assistance serve under section 7041(m)?",
+    "expected_output": "Section 7041(m) requires the Secretary of State to report before initial obligation that West Bank and Gaza Economic Support Fund assistance is intended to advance Middle East peace, improve regional security, support transparent and accountable government institutions, promote a private sector economy, or address urgent humanitarian needs.",
+    "expected_retrieval_context": [
+      "(m) West Bank and Gaza.--",
+      "Prior to the initial obligation of funds made available by this Act under the heading ``Economic Support Fund'' for assistance for the West Bank and Gaza",
+      "the purpose of such assistance is to--",
+      "advance Middle East peace",
+      "improve security in the region",
+      "continue support for transparent and accountable government institutions",
+      "promote a private sector economy",
+      "address urgent humanitarian needs"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What United Nations action by the Palestinians can trigger limits on Economic Support Fund assistance under section 7041(m)?",
+    "expected_output": "Under section 7041(m), Economic Support Fund assistance for the Palestinian Authority may not be made available if, after enactment, the Palestinians obtain the same standing as member states or full membership as a state in the United Nations or a specialized agency outside an agreement negotiated with Israel.",
+    "expected_retrieval_context": [
+      "None of the funds appropriated under the heading ``Economic Support Fund'' in this Act may be made available for assistance for the Palestinian Authority",
+      "if after the date of enactment of this Act",
+      "the Palestinians obtain the same standing as member states or full membership as a state in the United Nations",
+      "outside an agreement negotiated between Israel and the Palestinians"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What International Criminal Court action can trigger limits on assistance under section 7041(m)?",
+    "expected_output": "Section 7041(m) limits Economic Support Fund assistance for the Palestinian Authority if, after enactment, the Palestinians initiate an ICC judicially authorized investigation or actively support such an investigation that subjects Israeli nationals to investigation for alleged crimes against Palestinians.",
+    "expected_retrieval_context": [
+      "the Palestinians initiate an International Criminal Court (ICC) judicially authorized investigation",
+      "or actively support such an investigation",
+      "that subjects Israeli nationals to an investigation for alleged crimes against Palestinians"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "When may the Secretary of State waive the section 7041(m) restriction related to United Nations standing?",
+    "expected_output": "The Secretary of State may waive the section 7041(m) restriction resulting from Palestinians obtaining UN member-state standing if the Secretary certifies to the Committees on Appropriations that the waiver is in the U.S. national security interest and submits a report explaining how the waiver and continued assistance would further Middle East peace.",
+    "expected_retrieval_context": [
+      "The Secretary of State may waive the restriction in clause (i) of this subparagraph resulting from the application of subclause (I)",
+      "if the Secretary certifies to the Committees on Appropriations that to do so is in the national security interest of the United States",
+      "submits a report to such Committees detailing how the waiver and the continuation of assistance would assist in furthering Middle East peace"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What certification allows the President to waive section 1003 of Public Law 100-204 under section 7041(m)?",
+    "expected_output": "Section 7041(m) allows the President to waive section 1003 of Public Law 100-204 if the President certifies in writing that the Palestinians have not obtained UN member-state standing or full state membership outside an agreement with Israel and have not initiated or actively supported an ICC investigation against Israeli nationals for alleged crimes against Palestinians.",
+    "expected_retrieval_context": [
+      "The President may waive the provisions of section 1003 of the Foreign Relations Authorization Act, Fiscal Years 1988 and 1989",
+      "if the President determines and certifies in writing",
+      "the Palestinians have not, after the date of enactment of this Act",
+      "obtained in the United Nations or any specialized agency thereof the same standing as member states or full membership as a state",
+      "initiated or actively supported an ICC investigation against Israeli nationals"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "When can the President later waive section 1003 after being unable to make the initial certification in section 7041(m)?",
+    "expected_output": "At least 90 days after the President is unable to make the initial certification, section 7041(m) permits a waiver of section 1003 of Public Law 100-204 if the President certifies that the Palestinians have entered into direct and meaningful negotiations with Israel. Any such waiver lasts no more than six months at a time and cannot apply beyond 12 months after enactment.",
+    "expected_retrieval_context": [
+      "Not less than 90 days after the President is unable to make the certification",
+      "the President may waive section 1003 of Public Law 100-204",
+      "the Palestinians have entered into direct and meaningful negotiations with Israel",
+      "Any waiver pursuant to this subparagraph shall be effective for no more than a period of 6 months at a time",
+      "shall not apply beyond 12 months after the enactment of this Act"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "How must the Secretary reduce Economic Support Fund assistance for the Palestinian Authority under section 7041(m)?",
+    "expected_output": "Section 7041(m) requires the Secretary of State to reduce Economic Support Fund assistance for the Palestinian Authority by an amount equivalent to payments by the Palestinian Authority, Palestine Liberation Organization, and successor or affiliated organizations for acts of terrorism by imprisoned individuals and by individuals who died committing terrorism during the previous calendar year, and to report the reduced amount before obligation.",
+    "expected_retrieval_context": [
+      "The Secretary of State shall reduce the amount of assistance made available by this Act under the heading ``Economic Support Fund'' for the Palestinian Authority",
+      "by an amount the Secretary determines is equivalent to the amount expended by the Palestinian Authority, the Palestine Liberation Organization",
+      "as payments for acts of terrorism by individuals who are imprisoned after being fairly tried and convicted",
+      "and by individuals who died committing acts of terrorism during the previous calendar year",
+      "shall report to the Committees on Appropriations on the amount reduced"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What security and incitement reports are required for Palestinian Authority assistance under section 7041(m)?",
+    "expected_output": "Section 7041(m) applies the security reporting requirements of section 1404 of the 2008 Supplemental Appropriations Act to funds made available by the Act, including descriptions of any modifications to the Palestinian Authority security strategy. It also requires a report within 90 days detailing steps taken by the Palestinian Authority to counter incitement of violence against Israelis and promote peace and coexistence with Israel.",
+    "expected_retrieval_context": [
+      "The reporting requirements in section 1404 of the Supplemental Appropriations Act, 2008",
+      "shall apply to funds made available by this Act",
+      "including a description of modifications, if any, to the security strategy of the Palestinian Authority",
+      "Not later than 90 days after enactment of this Act",
+      "detailing steps taken by the Palestinian Authority to counter incitement of violence against Israelis and to promote peace and coexistence with Israel"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the Secretary of State report about UNRWA operations support officers before funds are obligated?",
+    "expected_output": "Before the initial obligation of UNRWA funds, and within 45 days after enactment, the Secretary of State must report whether UNRWA is using Operations Support Officers in the West Bank, Gaza, and other fields of operation to inspect installations and report inappropriate use.",
+    "expected_retrieval_context": [
+      "Prior to the initial obligation of funds for the United Nations Relief and Works Agency (UNRWA)",
+      "not later than 45 days after enactment of this Act",
+      "Secretary of State shall submit a report in writing to the Committees on Appropriations",
+      "utilizing Operations Support Officers in the West Bank, Gaza, and other fields of operation",
+      "to inspect UNRWA installations and reporting any inappropriate use"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the UNRWA report address about staff or beneficiary violations and neutrality?",
+    "expected_output": "The UNRWA report must address whether UNRWA is acting promptly on staff or beneficiary violations of its policies, including neutrality and impartiality, and whether it is implementing procedures to maintain facility neutrality, including a no-weapons policy and regular inspections to ensure installations are used only for humanitarian or other appropriate purposes.",
+    "expected_retrieval_context": [
+      "acting promptly to address any staff or beneficiary violation of its own policies",
+      "including the policies on neutrality and impartiality of employees",
+      "implementing procedures to maintain the neutrality of its facilities",
+      "including implementing a no-weapons policy",
+      "conducting regular inspections of its installations",
+      "only used for humanitarian or other appropriate purposes"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the UNRWA report address about educational materials?",
+    "expected_output": "The UNRWA report must address whether UNRWA is taking steps to ensure that educational materials taught in UNRWA-administered schools and summer camps are consistent with human rights, dignity, and tolerance, and do not induce incitement.",
+    "expected_retrieval_context": [
+      "taking steps to ensure the content of all educational materials currently taught",
+      "in UNRWA-administered schools and summer camps",
+      "is consistent with the values of human rights, dignity, and tolerance",
+      "does not induce incitement"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What must the UNRWA report address about financial transparency and audits?",
+    "expected_output": "The UNRWA report must address whether UNRWA is avoiding operations with financial institutions or related entities that violate U.S. law, taking steps to improve financial transparency, complying with the United Nations Board of Auditors' biennial audit requirements, and implementing the Board's recommendations in a timely fashion.",
+    "expected_retrieval_context": [
+      "not engaging in operations with financial institutions or related entities in violation of relevant United States law",
+      "taking steps to improve the financial transparency of the organization",
+      "in compliance with the United Nations Board of Auditors' biennial audit requirements",
+      "implementing in a timely fashion the Board's recommendations"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What findings does Congress make about Palestinian Authority payments in section 1002?",
+    "expected_output": "In section 1002, Congress finds that Palestinian Authority payments to terrorists in Israeli prisons and families of deceased terrorists incentivize acts of terror, that the United States does not provide direct budgetary support to the Palestinian Authority but pays some debts and funds programs for which the Authority would otherwise be responsible, and that U.S. community-based programs in the West Bank and Gaza support basic needs and promote peace and development.",
+    "expected_retrieval_context": [
+      "Congress makes the following findings:",
+      "The Palestinian Authority's practice of paying salaries to terrorists serving in Israeli prisons",
+      "as well as to the families of deceased terrorists, is an incentive to commit acts of terror",
+      "The United States does not provide direct budgetary support to the Palestinian Authority",
+      "supports community-based programs in the West Bank and Gaza that provide for basic human needs"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 1002 say about prior appropriations reductions related to Palestinian Authority payments?",
+    "expected_output": "Section 1002 finds that since fiscal year 2015, annual appropriations legislation has required reductions in Economic Support Fund aid to the Palestinian Authority because of payments for acts of terrorism, including a fiscal year 2017 reduction equivalent to amounts spent by the Palestinian Authority, Palestine Liberation Organization, and successor or affiliated organizations on such payments.",
+    "expected_retrieval_context": [
+      "Since fiscal year 2015, annual appropriations legislation has mandated the reduction of Economic Support Fund aid",
+      "for the Palestinian Authority as a result of their payments for acts of terrorism",
+      "a reduction ``by an amount the Secretary determines is equivalent to the amount expended",
+      "Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations",
+      "payments for acts of terrorism by individuals who are imprisoned"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 1003 call on Palestinian organizations to do about payments for acts of terrorism?",
+    "expected_output": "Section 1003 calls on the Palestinian Authority, the Palestine Liberation Organization, and successor or affiliated organizations to stop payments for acts of terrorism to imprisoned individuals and individuals who died committing acts of terrorism, and to repeal the laws authorizing those payments.",
+    "expected_retrieval_context": [
+      "SEC. 1003. SENSE OF CONGRESS.",
+      "calls on the Palestinian Authority, the Palestine Liberation Organization, and any successor or affiliated organizations",
+      "to stop payments for acts of terrorism by individuals who are imprisoned",
+      "and by individuals who died committing acts of terrorism",
+      "to repeal the laws authorizing such payments"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 1003 call on donor countries to do?",
+    "expected_output": "Section 1003 calls on all donor countries providing budgetary assistance to the Palestinian Authority to stop direct budgetary support until the Palestinian Authority stops all payments incentivizing terror.",
+    "expected_retrieval_context": [
+      "calls on all donor countries providing budgetary assistance to the Palestinian Authority",
+      "to cease direct budgetary support",
+      "until the Palestinian Authority stops all payments incentivizing terror"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What alternative programs does section 1003 urge the Palestinian Authority to develop?",
+    "expected_output": "Section 1003 urges the Palestinian Authority to develop programs that provide essential public services and support to individuals in need within its jurisdictional control, instead of providing payments contingent on acts of violence.",
+    "expected_retrieval_context": [
+      "urges the Palestinian Authority to develop programs",
+      "to provide essential public services and support to any individual in need within its jurisdictional control",
+      "rather than to provide payments contingent on perpetrating acts of violence"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 1003 urge the U.S. Permanent Representative to the United Nations to do?",
+    "expected_output": "Section 1003 urges the U.S. Permanent Representative to the United Nations to use the voice, vote, and influence of the United States at the U.N. to highlight Palestinian Authority payments for acts of terrorism and urge other member states to pressure the Palestinian Authority to stop those payments immediately.",
+    "expected_retrieval_context": [
+      "urges the United States Permanent Representative to the United Nations",
+      "to use the voice, vote, and influence of the United States at the United Nations",
+      "to highlight the issue of Palestinian Authority payments for acts of terrorism",
+      "to urge other Member States to apply pressure upon the Palestinian Authority to immediately cease such payments"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What does section 1003 urge the Department of State to do in bilateral and multilateral engagements?",
+    "expected_output": "Section 1003 urges the Department of State to use bilateral and multilateral engagements with governments and organizations committed to Israeli-Palestinian peace to highlight Palestinian Authority payments for acts of terrorism and urge them to join the United States in calling for the payments to cease immediately.",
+    "expected_retrieval_context": [
+      "urges the Department of State to use its bilateral and multilateral engagements",
+      "with all governments and organizations committed to the cause of peace between Israel and the Palestinians",
+      "to highlight the issue of Palestinian Authority payments for acts of terrorism",
+      "to urge such governments and organizations to join the United States",
+      "calling on the Palestinian Authority to immediately cease such payments"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What extra definition must the Secretary of State include in the section 1004 certification?",
+    "expected_output": "Section 1004 requires the Secretary of State to include in the certification the definition of acts of terrorism used to determine whether payments for acts of terrorism had been terminated under subsection (a)(1)(B).",
+    "expected_retrieval_context": [
+      "Additional certification requirement.--The Secretary of State shall include in the certification required under paragraph (1)",
+      "the definition of ``acts of terrorism''",
+      "the Secretary used for purposes of making the determination in subparagraph (B) of such paragraph"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "What list of criteria must the Secretary of State submit under section 1004(f)?",
+    "expected_output": "Section 1004(f) requires the Secretary of State, within 15 days after enactment, to submit to the appropriate congressional committees the criteria used to determine whether West Bank and Gaza assistance directly benefits the Palestinian Authority. The Secretary must submit an updated list within 15 days after any modification to the list.",
+    "expected_retrieval_context": [
+      "(f) List of Criteria.--",
+      "Not later than 15 days after the date of the enactment of this Act",
+      "the Secretary of State shall submit to the appropriate congressional committees a list of the criteria",
+      "determine whether assistance for the West Bank and Gaza is assistance that directly benefits the Palestinian Authority",
+      "submit to the appropriate congressional committees an updated list",
+      "not later than 15 days after the date on which the Secretary makes any modification to the list"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  },
+  {
+    "question": "Which congressional committees are defined as appropriate congressional committees in section 1007?",
+    "expected_output": "Section 1007 defines appropriate congressional committees as the Committee on Appropriations and the Committee on Foreign Affairs of the House of Representatives, and the Committee on Appropriations and the Committee on Foreign Relations of the Senate.",
+    "expected_retrieval_context": [
+      "SEC. 1007. APPROPRIATE CONGRESSIONAL COMMITTEES DEFINED.",
+      "the term ``appropriate congressional committees'' means--",
+      "the Committee on Appropriations and the Committee on Foreign Affairs of the House of Representatives",
+      "the Committee on Appropriations and the Committee on Foreign Relations of the Senate"
+    ],
+    "metadata_filter": {
+      "packageId": "BILLS-115hr1625enr"
+    }
+  }
+]

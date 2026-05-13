@@ -18,26 +18,37 @@ image:
 imagePullSecrets: []
 
 ## ----------------------------------------------------------------------------
-## AWS Bedrock authentication.
+## AWS Bedrock embedding authentication.
 ##
-## auth.mode controls how the pods authenticate to Bedrock:
-##   - "bearer"    (default): Secret holds AWS_BEARER_TOKEN_BEDROCK
+## auth.mode controls how the pods authenticate to AWS APIs:
+##   - "none":                no AWS credentials are injected
+##   - "bearer":              Secret holds AWS_BEARER_TOKEN_BEDROCK
 ##   - "accessKey":           Secret holds AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+##                            and optional AWS_SESSION_TOKEN
 ##   - "irsa":                no Secret keys; the ServiceAccount is annotated
 ##                            with eks.amazonaws.com/role-arn (for real EKS).
 ## ----------------------------------------------------------------------------
 aws:
   auth:
-    mode: bearer
+    mode: none
     bearerToken: ""           # required when mode=bearer
     accessKeyId: ""           # required when mode=accessKey
     secretAccessKey: ""       # required when mode=accessKey
+    sessionToken: ""           # optional when mode=accessKey (AWS SSO/session credentials)
     irsaRoleArn: ""           # required when mode=irsa
 
 bedrock:
   region: us-east-1
   embeddingModelId: amazon.titan-embed-text-v2:0
+  embeddingBearerToken: ""     # optional override; defaults to aws.auth.bearerToken
   embeddingDimensions: 1024
+
+anthropic:
+  apiKey: ""                    # required for question-api
+  model: claude-sonnet-4-5
+  maxTokens: 1024
+  temperature: 0.0
+  timeoutSeconds: 90
 
 ## ----------------------------------------------------------------------------
 ## govinfo (https://api.govinfo.gov)
@@ -45,13 +56,6 @@ bedrock:
 govinfo:
   apiKey: ""
   baseUrl: https://api.govinfo.gov
-
-## ----------------------------------------------------------------------------
-## Anthropic (default LLM provider)
-## ----------------------------------------------------------------------------
-anthropic:
-  apiKey: ""
-  model: claude-sonnet-4-5
 
 ## ----------------------------------------------------------------------------
 ## Postgres + pgvector pod
@@ -116,13 +120,6 @@ qa:
   service:
     type: ClusterIP
     port: 8000
-
-  ## anthropic | ollama
-  llmProvider: anthropic
-
-  ## Ollama (host-resident; no in-cluster pod is deployed).
-  ollamaBaseUrl: http://host.docker.internal:11434
-  ollamaModel: llama3.1:8b
 
   ## Optional hostAliases for clusters where host.docker.internal does NOT resolve
   ## from inside pods. Each item is { ip: "...", hostnames: ["..."] }.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Smoke-test the Bedrock API key in .env by embedding a short input with
-# amazon.titan-embed-text-v2:0 and printing the vector dimensions, a few
+# EMBEDDING_MODEL and printing the vector dimensions, a few
 # sample values, and the input token count.
 #
 # Usage:
@@ -39,7 +39,7 @@ if [ -z "${AWS_BEARER_TOKEN_BEDROCK:-}" ] \
 fi
 
 REGION="${AWS_REGION:-us-east-1}"
-MODEL_ID="${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}"
+MODEL_ID="${EMBEDDING_MODEL:-${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}}"
 
 printf '[bedrock-smoke] region=%s model=%s input=%q\n' \
   "${REGION}" "${MODEL_ID}" "${INPUT_TEXT}"

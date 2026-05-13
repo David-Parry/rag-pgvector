@@ -1,7 +1,7 @@
 [project]
 name = "question-api"
 version = "0.1.0"
-description = "FastAPI pod that answers grounded questions using Bedrock Titan v2 retrieval over pgvector and a switchable Anthropic Claude / Ollama LLM backend."
+description = "FastAPI pod that answers grounded questions using Titan v2 retrieval over pgvector and a direct Anthropic Claude LLM backend."
 readme = "README.md"
 requires-python = "==3.12.*"
 dependencies = [
@@ -12,8 +12,6 @@ dependencies = [
     "structlog>=24.4.0",
     "langchain>=1.2.0,<2.0.0",
     "langchain-aws>=1.4.0",
-    "langchain-anthropic>=1.4.0",
-    "langchain-ollama>=0.3.0",
     "langchain-postgres>=0.0.17",
     "psycopg[binary]>=3.2.3",
     "sqlalchemy>=2.0.36",

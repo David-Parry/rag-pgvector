@@ -6,11 +6,12 @@ its ``core/composition.py`` module (Dependency Inversion + DRY).
 
 from __future__ import annotations
 
+import json
 import re
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class _BaseEnvSettings(BaseSettings):
@@ -33,7 +34,7 @@ class AwsBedrockSettings(_BaseEnvSettings):
     region: str = Field(default="us-east-1", alias="AWS_REGION")
     embedding_model_id: str = Field(
         default="amazon.titan-embed-text-v2:0",
-        alias="BEDROCK_EMBEDDING_MODEL_ID",
+        validation_alias=AliasChoices("EMBEDDING_MODEL", "BEDROCK_EMBEDDING_MODEL_ID"),
     )
     embedding_dimensions: int = Field(default=1024, alias="BEDROCK_EMBEDDING_DIMENSIONS")
     bearer_token: SecretStr | None = Field(default=None, alias="AWS_BEARER_TOKEN_BEDROCK")
@@ -85,7 +86,10 @@ class GovInfoSettings(_BaseEnvSettings):
 
 class AnthropicSettings(_BaseEnvSettings):
     api_key: SecretStr = Field(default=SecretStr(""), alias="ANTHROPIC_API_KEY")
-    model: str = Field(default="claude-sonnet-4-5", alias="ANTHROPIC_MODEL")
+    model: str = Field(default="claude-sonnet-4-5", alias="ANTHROPIC_DIRECT_MODEL")
+    max_tokens: int = Field(default=1024, alias="ANTHROPIC_MAX_TOKENS")
+    temperature: float = Field(default=0.0, alias="ANTHROPIC_TEMPERATURE")
+    timeout_seconds: int = Field(default=30, alias="ANTHROPIC_TIMEOUT_SECONDS")
 
 
 class OllamaSettings(_BaseEnvSettings):
@@ -101,7 +105,38 @@ class RetrievalSettings(_BaseEnvSettings):
     score_threshold: float = Field(default=0.25, alias="RETRIEVAL_SCORE_THRESHOLD")
 
 
-LLMProvider = Literal["anthropic", "ollama"]
+class DeepEvalSettings(_BaseEnvSettings):
+    judge_provider: Literal["anthropic", "ollama"] = Field(
+        default="anthropic",
+        alias="DEEPEVAL_JUDGE_PROVIDER",
+    )
+    top_k_grid: Annotated[list[int], NoDecode] = Field(
+        default_factory=lambda: [3, 5, 8],
+        alias="DEEPEVAL_TOP_K_GRID",
+    )
+    threshold_grid: Annotated[list[float], NoDecode] = Field(
+        default_factory=lambda: [0.4, 0.6, 0.8],
+        alias="DEEPEVAL_THRESHOLD_GRID",
+    )
+    goldens_path: str = Field(
+        default="evals/src/rag_evals/data/goldens_bills_115hr1625enr.json",
+        alias="DEEPEVAL_GOLDENS_PATH",
+    )
+    verbose_mode: bool = Field(default=False, alias="DEEPEVAL_VERBOSE_MODE")
+    report_file_type: Literal["markdown", "html"] = Field(
+        default="html",
+        alias="DEEPEVAL_REPORT_FILE_TYPE",
+    )
+
+    @field_validator("top_k_grid", mode="before")
+    @classmethod
+    def _parse_top_k_grid(cls, value: object) -> object:
+        return _parse_csv_or_json_list(value, cast=int)
+
+    @field_validator("threshold_grid", mode="before")
+    @classmethod
+    def _parse_threshold_grid(cls, value: object) -> object:
+        return _parse_csv_or_json_list(value, cast=float)
 
 
 # Bedrock model ids follow the convention `<vendor>.<family>-v<major>:<rev>`,
@@ -149,3 +184,14 @@ def _parse_embedding_model_id(model_id: str) -> tuple[str, str]:
     else:
         version = ""
     return name, version
+
+
+def _parse_csv_or_json_list(value: object, *, cast: type[int] | type[float]) -> object:
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        return [cast(item) for item in json.loads(text)]
+    return [cast(part.strip()) for part in text.split(",") if part.strip()]

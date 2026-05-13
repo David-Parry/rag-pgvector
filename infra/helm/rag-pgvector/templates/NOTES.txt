@@ -5,13 +5,8 @@ Pods:
   - {{ include "rag.fullname" . }}-vectorizer          (POST /ingest)
   - {{ include "rag.fullname" . }}-question-api        (POST /ask)
 
-LLM provider: {{ .Values.qa.llmProvider }}
-{{- if eq .Values.qa.llmProvider "ollama" }}
-Ollama is expected on the Docker Desktop host at {{ .Values.qa.ollamaBaseUrl }}.
-Pull a model on the laptop, e.g.: `ollama pull {{ .Values.qa.ollamaModel }}`.
-{{- end }}
-
-AWS Bedrock auth mode: {{ .Values.aws.auth.mode }}
+Anthropic Claude is used for answer generation.
+AWS Bedrock embedding auth mode: {{ .Values.aws.auth.mode }}
 
 Port-forward from the laptop:
   kubectl port-forward -n {{ .Release.Namespace }} svc/vectorizer    8001:{{ .Values.vectorizer.service.port }}
