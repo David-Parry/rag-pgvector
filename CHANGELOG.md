@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `chat-bot-ui` advanced ask options for optional `question-api` parameters, defaulted to the same metadata, `topK`, and `scoreThreshold` values used by `scripts/ps/Ask.ps1`.
+
 - `evals/` workspace member with a DeepEval retriever benchmark for sweeping pgvector `top_k` and cosine-distance thresholds against `BILLS-115hr1625enr` goldens.
 
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
@@ -42,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PowerShell equivalents for repository helper scripts under `scripts/ps/`, including shared `_Common.ps1` (repo root, `.env` parsing, port-forward hygiene) and dispatcher `Rag.ps1` for common commands.
 
 ### Fixed
+
+- `chat-bot-ui`: keep long assistant responses visible by collapsing Advanced options on send and scrolling the newest message into view from its start.
 
 - `rag-core`: parse DeepEval grid settings from comma-separated environment values before pydantic-settings attempts JSON decoding; pytest now configures repo source and test-helper paths without requiring a manual `PYTHONPATH`.
 
