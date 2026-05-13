@@ -122,6 +122,11 @@ class DeepEvalSettings(_BaseEnvSettings):
         default="evals/src/rag_evals/data/goldens_bills_115hr1625enr.json",
         alias="DEEPEVAL_GOLDENS_PATH",
     )
+    verbose_mode: bool = Field(default=False, alias="DEEPEVAL_VERBOSE_MODE")
+    report_file_type: Literal["markdown", "html"] = Field(
+        default="markdown",
+        alias="DEEPEVAL_REPORT_FILE_TYPE",
+    )
 
     @field_validator("top_k_grid", mode="before")
     @classmethod

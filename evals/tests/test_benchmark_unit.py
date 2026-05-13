@@ -5,6 +5,7 @@ from collections.abc import Sequence
 import pytest
 from _evals_fakes import FakeStore, StubJudge, StubMetric, hit
 
+from rag_evals.domain import benchmark as benchmark_module
 from rag_evals.domain.benchmark import DeepEvalJudge, Metric, RetrieverBenchmark
 from rag_evals.domain.golden import Golden
 
@@ -80,6 +81,30 @@ async def test_benchmark_forwards_metadata_filter_and_top_k() -> None:
             "filter": {"packageId": "BILLS-115hr1625enr"},
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_benchmark_passes_verbose_mode_to_default_metrics(monkeypatch) -> None:
+    observed: list[bool] = []
+
+    def fake_default_metric_factory(
+        judge: DeepEvalJudge,
+        *,
+        verbose_mode: bool = False,
+    ) -> Sequence[Metric]:
+        observed.append(verbose_mode)
+        return _stub_metric_factory(judge)
+
+    monkeypatch.setattr(benchmark_module, "default_metric_factory", fake_default_metric_factory)
+    benchmark = RetrieverBenchmark(
+        store=FakeStore([hit(1, 0.1)]),
+        judge=StubJudge(),
+        verbose_mode=True,
+    )
+
+    await benchmark.run([_golden()], top_k_grid=[3], threshold_grid=[0.8])
+
+    assert observed == [True]
 
 
 def _stub_metric_factory(judge: DeepEvalJudge) -> Sequence[Metric]:

@@ -93,3 +93,27 @@ def test_deepeval_settings_parse_json_grids() -> None:
 
     assert settings.top_k_grid == [3, 6, 8]
     assert settings.threshold_grid == [0.4, 0.6, 0.8]
+
+
+def test_deepeval_settings_verbose_mode_defaults_off() -> None:
+    settings = DeepEvalSettings(_env_file=None)
+
+    assert settings.verbose_mode is False
+
+
+def test_deepeval_settings_reads_verbose_mode() -> None:
+    settings = DeepEvalSettings(DEEPEVAL_VERBOSE_MODE="true", _env_file=None)
+
+    assert settings.verbose_mode is True
+
+
+def test_deepeval_settings_report_file_type_defaults_to_markdown() -> None:
+    settings = DeepEvalSettings(_env_file=None)
+
+    assert settings.report_file_type == "markdown"
+
+
+def test_deepeval_settings_reads_html_report_file_type() -> None:
+    settings = DeepEvalSettings(DEEPEVAL_REPORT_FILE_TYPE="html", _env_file=None)
+
+    assert settings.report_file_type == "html"

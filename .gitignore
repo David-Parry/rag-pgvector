@@ -83,4 +83,7 @@ kubeconfig
 *.log
 logs/
 
+# Generated eval reports may include third-party SDK output or request metadata.
+documentation/eval-reports/
+
 uv-default-index.txt

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from vectorizer.api.dependencies import get_vectorize_service
 from vectorizer.domain.models import (
@@ -12,7 +12,7 @@ from vectorizer.domain.models import (
     IngestRequest,
     IngestResponse,
 )
-from vectorizer.domain.vectorize_service import VectorizeService
+from vectorizer.domain.vectorize_service import IngestPackageDownloadError, VectorizeService
 
 router = APIRouter()
 
@@ -47,4 +47,10 @@ async def ingest_package(
     payload: IngestPackageRequest,
     service: Annotated[VectorizeService, Depends(get_vectorize_service)],
 ) -> IngestResponse:
-    return await service.ingest_package(payload)
+    try:
+        return await service.ingest_package(payload)
+    except IngestPackageDownloadError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc

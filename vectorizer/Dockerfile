@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Multi-stage build for the vectorizer pod.
 # Build context MUST be the monorepo root because vectorizer depends on the
 # rag-core workspace member.
@@ -21,6 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NATIVE_TLS=true \
     UV_PYTHON_DOWNLOADS=never
 
 # 0.5.x mishandles some Artifactory URL joins; 0.9.x+ improves index auth and PyPI compat.
@@ -29,7 +29,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv
 WORKDIR /workspace
 
 COPY pyproject.toml uv.lock ./
-COPY scripts/docker/rewrite_uv_lock_for_mirror.py scripts/docker/prepare_artifactory_for_uv.py scripts/docker/
+COPY scripts/docker/rewrite_uv_lock_for_mirror.py scripts/docker/rewrite_uv_lock_for_public_pypi.py scripts/docker/prepare_artifactory_for_uv.py scripts/docker/check_uv_lock_artifact_access.py scripts/docker/uv_sync_with_fallback.sh scripts/docker/
 COPY libs/rag-core/pyproject.toml libs/rag-core/README.md libs/rag-core/
 COPY libs/rag-core/src libs/rag-core/src
 COPY vectorizer/pyproject.toml vectorizer/README.md vectorizer/
@@ -44,24 +44,7 @@ ARG UV_DEFAULT_INDEX=
 RUN --mount=type=secret,id=uv_default_index,required=false \
     --mount=type=secret,id=ssl_cert_bundle,required=false \
     --mount=type=secret,id=netrc,required=false \
-    set -eu; \
-    if [ -s /run/secrets/netrc ]; then \
-      install -m 600 /run/secrets/netrc /root/.netrc; \
-    fi; \
-    UV_IDX="${UV_DEFAULT_INDEX}"; \
-    if [ -s /run/secrets/uv_default_index ]; then \
-      UV_IDX="$(tr -d '\r\n' < /run/secrets/uv_default_index)"; \
-    fi; \
-    if [ -s /run/secrets/ssl_cert_bundle ]; then \
-      export SSL_CERT_FILE=/run/secrets/ssl_cert_bundle; \
-    fi; \
-    if [ -n "${UV_IDX}" ]; then \
-      export UV_DEFAULT_INDEX="${UV_IDX}"; \
-      export UV_DEFAULT_INDEX="$(python3 scripts/docker/prepare_artifactory_for_uv.py)"; \
-      export UV_CONCURRENT_DOWNLOADS="${UV_CONCURRENT_DOWNLOADS:-2}"; \
-      python3 scripts/docker/rewrite_uv_lock_for_mirror.py uv.lock; \
-    fi; \
-    uv sync --package vectorizer --frozen --no-dev
+    sh scripts/docker/uv_sync_with_fallback.sh vectorizer
 
 # ----- Stage 2: runtime -------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime

@@ -19,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - DeepEval report runners now explicitly require an already-running pgvector database and fail fast when `DATABASE_URL` is unreachable, without starting or tearing down database resources.
 
+- DeepEval report runners now load `ANTHROPIC_API_KEY` from `ANTHROPIC_API_KEY_FILE` or `claudeapi.txt` when the environment variable is not set.
+
+- DeepEval report runners default to `INFO` logging via `DEEPEVAL_LOG_LEVEL` and keep stderr debug output out of successful markdown reports.
+
+- DeepEval reports now include configurable pass/fail gates and a summary section for multi-threshold retrieval sweeps.
+
+- DeepEval report runners now write progress and third-party SDK output to a companion `.log` file so generated markdown reports remain previewable.
+
+- `DEEPEVAL_VERBOSE_MODE` now controls DeepEval metric display verbosity and defaults off for clean report runs.
+
+- DeepEval report runners support `DEEPEVAL_REPORT_FILE_TYPE=html` for generated HTML summary reports.
+
+- Generated DeepEval report files under `documentation/eval-reports/` are ignored to avoid accidentally committing SDK request metadata.
+
 - `.gitattributes` keeps shell scripts checked out with LF line endings so bash runners work consistently on Windows.
 
 - Direct Anthropic Claude provider support for `question-api`, configured by `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_FILE`.
@@ -36,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests: exclude integration-marked tests from the default pytest run so external Bedrock, Anthropic, and pgvector checks remain opt-in via `pytest -m integration`.
 
 - `rag-evals`: configure the CLI to use a Windows Selector event loop before opening async psycopg connections, matching the integration test policy.
+
+- `rag-evals`: emit progress logs for benchmark start, retrieval per golden, scoring per grid cell, and DeepEval metric case completion so long judge runs no longer appear stalled.
 
 - PowerShell helpers now prepend `%USERPROFILE%\.local\bin` to the process PATH at startup so locally installed tools such as `uv` are discovered consistently.
 

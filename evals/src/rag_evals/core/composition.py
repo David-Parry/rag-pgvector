@@ -39,7 +39,12 @@ async def build_container(settings: EvalsSettings) -> Container:
         anthropic=settings.anthropic,
         ollama=settings.ollama,
     )
-    benchmark = RetrieverBenchmark(store=retriever, judge=judge, logger=log)
+    benchmark = RetrieverBenchmark(
+        store=retriever,
+        judge=judge,
+        logger=log,
+        verbose_mode=settings.deepeval.verbose_mode,
+    )
     return Container(
         settings=settings,
         embeddings=embeddings,
