@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/ps/Inspect-RedisCheckpoints.ps1` to scan Redis checkpoint keys and dump read-only values by Redis data type for local LangGraph checkpoint troubleshooting.
 - `requirements/` directory: `requirements-dev.in` / `requirements-dev.txt` for local development, `docker-vectorizer.in` / `docker-vectorizer.txt` and `docker-question-api.in` / `docker-question-api.txt` for image installs; regenerate fully pinned files with `pip-compile` when needed.
 - [documentation/PYTHON_PIP_WORKFLOW.md](documentation/PYTHON_PIP_WORKFLOW.md) summarizes venv setup, pip-tools, and optional `python -m build`.
 - `scripts/docker/pip_install_with_fallback.sh` and `scripts/docker/prepare_artifactory_for_pip.py` for Docker `pip install` with optional mirror, `.netrc`, and TLS bundle; BuildKit secrets `pip_index_url` and optional `pip_config` (host `pip.ini` as `/etc/pip.conf` via `RAG_DOCKER_PIP_CONFIG_FILE`), plus env `RAG_PIP_INDEX_URL_FILE` / `RAG_DOCKER_PIP_INDEX_URL` (legacy `uv_default_index` / `RAG_UV_*` still supported).

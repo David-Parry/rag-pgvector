@@ -45,6 +45,12 @@ Your client **`sessionId` (UUID string)** is LangGraph **`thread_id`**, so it ap
 
 Use the same URL as **`LANGGRAPH_REDIS_URL`** or **`REDIS_URL`** (for example `redis://127.0.0.1:6379`).
 
+On Windows, use the read-only helper script to scan matching checkpoint keys, print the Redis type and TTL, and dump supported values such as RedisJSON checkpoints:
+
+```powershell
+.\scripts\ps\Inspect-RedisCheckpoints.ps1 -RedisCliPath "C:\path\to\redis-cli.exe"
+```
+
 1. List keys for one session (prefer `SCAN` over `KEYS` outside dev):
 
    ```text
