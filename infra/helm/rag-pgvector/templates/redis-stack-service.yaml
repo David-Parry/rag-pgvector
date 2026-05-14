@@ -1,0 +1,17 @@
+{{- if .Values.redisStack.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rag.redisStackName" . }}
+  labels:
+    {{- include "rag.componentLabels" (merge (dict "component" "redis-stack") (deepCopy .)) | nindent 4 }}
+spec:
+  type: {{ .Values.redisStack.service.type }}
+  ports:
+    - name: redis
+      port: {{ .Values.redisStack.service.port }}
+      targetPort: redis
+      protocol: TCP
+  selector:
+    {{- include "rag.componentSelector" (dict "root" . "component" "redis-stack") | nindent 4 }}
+{{- end }}

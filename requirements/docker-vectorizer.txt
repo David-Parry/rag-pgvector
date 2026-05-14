@@ -1,0 +1,5 @@
+# Install rag-core first (repo-root paths), then vectorizer. Member pyproject lists rag-core==0.1.0
+# so pip uses the editable already in the venv (file:../libs/... is mis-resolved inside Docker).
+# Regenerate fully pinned output with: pip-compile requirements/docker-vectorizer.in -o requirements/docker-vectorizer.txt
+-e ./libs/rag-core
+-e ./vectorizer

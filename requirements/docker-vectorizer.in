@@ -1,0 +1,4 @@
+# Editable workspace members for the vectorizer image (compile with pip-compile).
+# rag-core must be listed before vectorizer: Docker pip mis-resolves file:../libs/rag-core from pyproject.
+-e ./libs/rag-core
+-e ./vectorizer

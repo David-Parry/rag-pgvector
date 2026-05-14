@@ -18,7 +18,7 @@ venv/
 env/
 ENV/
 
-# uv
+# Legacy Astral uv cache (optional)
 .uv/
 
 # Environment
@@ -86,4 +86,6 @@ logs/
 # Generated eval reports may include third-party SDK output or request metadata.
 documentation/eval-reports/
 
+# Local PyPI index URL secret files (do not commit)
 uv-default-index.txt
+pip-index-url.txt

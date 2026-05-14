@@ -1,0 +1,4 @@
+# Editable workspace members for the question-api image (compile with pip-compile).
+# rag-core before question-api (same ordering rationale as docker-vectorizer.in).
+-e ./libs/rag-core
+-e ./question-api

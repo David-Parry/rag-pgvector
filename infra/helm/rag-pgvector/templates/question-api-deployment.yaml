@@ -42,6 +42,10 @@ spec:
               value: {{ .Values.qa.topK | quote }}
             - name: RETRIEVAL_SCORE_THRESHOLD
               value: {{ .Values.qa.scoreThreshold | quote }}
+            {{- if and .Values.redisStack.enabled (not (hasKey .Values.qa.env "LANGGRAPH_REDIS_URL")) (not (hasKey .Values.qa.env "REDIS_URL")) }}
+            - name: LANGGRAPH_REDIS_URL
+              value: {{ include "rag.redisUrl" . | quote }}
+            {{- end }}
             {{- range $k, $v := .Values.qa.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

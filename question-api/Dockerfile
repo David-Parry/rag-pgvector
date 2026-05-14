@@ -6,7 +6,10 @@
 # Corporate / JFrog: see documentation/DOCKER_PYPI_MIRROR.md (same pattern as vectorizer).
 #
 # When the index URL contains `user:token@`, the builder merges credentials into
-# `/root/.netrc` and uses a credential-free index URL so artifact downloads authenticate.
+# `/root/.netrc` and uses a credential-free `PIP_INDEX_URL`.
+#
+# Optional: secret `pip_config` — host `pip.ini` copied to `/etc/pip.conf` for the
+# install step (`RAG_DOCKER_PIP_CONFIG_FILE` in helper scripts). See DOCKER_PYPI_MIRROR.md.
 #
 # Docker Desktop's built-in Kubernetes shares the Docker daemon, so this image
 # is visible to the cluster without any registry push or load step.
@@ -15,31 +18,28 @@
 FROM python:3.12-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_NATIVE_TLS=true \
-    UV_PYTHON_DOWNLOADS=never
-
-COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /usr/local/bin/uv
+    PYTHONUNBUFFERED=1
 
 WORKDIR /workspace
 
-COPY pyproject.toml uv.lock ./
-COPY scripts/docker/rewrite_uv_lock_for_mirror.py scripts/docker/rewrite_uv_lock_for_public_pypi.py scripts/docker/prepare_artifactory_for_uv.py scripts/docker/check_uv_lock_artifact_access.py scripts/docker/uv_sync_with_fallback.sh scripts/docker/
+COPY scripts/docker/pip_install_with_fallback.sh scripts/docker/prepare_artifactory_for_pip.py scripts/docker/
+COPY requirements/docker-question-api.txt requirements/
 COPY libs/rag-core/pyproject.toml libs/rag-core/README.md libs/rag-core/
 COPY libs/rag-core/src libs/rag-core/src
-COPY vectorizer/pyproject.toml vectorizer/README.md vectorizer/
-COPY vectorizer/src vectorizer/src
 COPY question-api/pyproject.toml question-api/README.md question-api/
 COPY question-api/src question-api/src
 
-ARG UV_DEFAULT_INDEX=
+ARG PIP_INDEX_URL=
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 
-RUN --mount=type=secret,id=uv_default_index,required=false \
-    --mount=type=secret,id=ssl_cert_bundle,required=false \
+RUN chmod +x scripts/docker/pip_install_with_fallback.sh
+
+RUN --mount=type=secret,id=pip_index_url,required=false \
+    --mount=type=secret,id=uv_default_index,required=false \
+    --mount=type=secret,id=pip_config,required=false \
     --mount=type=secret,id=netrc,required=false \
-    sh scripts/docker/uv_sync_with_fallback.sh question-api
+    --mount=type=secret,id=ssl_cert_bundle,required=false \
+    sh scripts/docker/pip_install_with_fallback.sh requirements/docker-question-api.txt
 
 # ----- Stage 2: runtime -------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime

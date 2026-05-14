@@ -44,6 +44,7 @@ Commands:
   helm-install           helm upgrade --install (loads repo .env)
   port-forward           kubectl port-forward vectorizer, question-api, postgres
   restart-question-api   kubectl rollout restart for question-api Deployment (K8s)
+  check-pods             Verify pods are Running/Ready (default context: docker-desktop)
   ingest-package <id>    POST /ingest/package
   ask [question]         POST /ask (omit question for demo default)
   seed-ingest            POST /ingest sample batch
@@ -59,9 +60,10 @@ Examples:
   .\Rag.ps1 ingest-package BILLS-115hr1625enr
   $env:RAW='1'; .\Rag.ps1 ask "short question"
   .\Rag.ps1 eval-retrieval
+  .\Rag.ps1 check-pods
 
 Individual scripts live beside this file:
-  Docker-Desktop-Up.ps1, Helm-Install.ps1, Port-Forward.ps1, Restart-QuestionApi.ps1, ...
+  Docker-Desktop-Up.ps1, Helm-Install.ps1, Port-Forward.ps1, Restart-QuestionApi.ps1, Check-KubernetesPods.ps1, ...
 '@
 }
 
@@ -96,6 +98,10 @@ switch -Regex ($Command.ToLowerInvariant()) {
     }
     '^restart-question-api$|^restart-qa$|^restart-api$' {
         & (Join-Path $here 'Restart-QuestionApi.ps1') @forwardArgs
+        break
+    }
+    '^check-pods$|^pods-status$|^k8s-pods$' {
+        & (Join-Path $here 'Check-KubernetesPods.ps1') @forwardArgs
         break
     }
     '^ingest-package$|^ingest$' {

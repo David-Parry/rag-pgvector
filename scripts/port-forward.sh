@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Forward all three pods to the laptop:
+# Forward app, database, and Redis Stack services to the laptop:
 #   localhost:8001 -> svc/vectorizer:8000
 #   localhost:8002 -> svc/question-api:8000
 #   localhost:5432 -> svc/<release>-postgres:5432
+#   localhost:6379 -> svc/<release>-redis-stack:6379
 #
 # Behavior:
 #   * On startup, scans for stale `kubectl port-forward` processes that target
@@ -21,6 +22,8 @@
 #   QA_PORT           (default: 8002)
 #   POSTGRES_PORT     (default: 5432)
 #   POSTGRES_SVC      (default: rag-postgres)
+#   REDIS_PORT        (default: 6379)
+#   REDIS_SVC         (default: rag-redis-stack)
 #   KILL_STALE=1      auto-reap stale kubectl port-forwards from prior runs
 set -euo pipefail
 
@@ -29,6 +32,8 @@ VECTORIZER_PORT="${VECTORIZER_PORT:-8001}"
 QA_PORT="${QA_PORT:-8002}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_SVC="${POSTGRES_SVC:-rag-postgres}"
+REDIS_PORT="${REDIS_PORT:-6379}"
+REDIS_SVC="${REDIS_SVC:-rag-redis-stack}"
 KILL_STALE="${KILL_STALE:-0}"
 
 if ! command -v kubectl >/dev/null 2>&1; then
@@ -59,7 +64,7 @@ trap cleanup EXIT INT TERM
 # regardless of whose shell launched it (orphaned trees from past runs included).
 stale_pf_pids() {
   pgrep -u "$(id -u)" -f \
-    "kubectl .*(-n|--namespace)[= ]+${NAMESPACE} .*port-forward .*svc/(vectorizer|question-api|${POSTGRES_SVC})" \
+    "kubectl .*(-n|--namespace)[= ]+${NAMESPACE} .*port-forward .*svc/(vectorizer|question-api|${POSTGRES_SVC}|${REDIS_SVC})" \
     2>/dev/null || true
 }
 
@@ -97,7 +102,7 @@ port_holder() {
 }
 
 BLOCKED=0
-for spec in "vectorizer ${VECTORIZER_PORT}" "question-api ${QA_PORT}" "${POSTGRES_SVC} ${POSTGRES_PORT}"; do
+for spec in "vectorizer ${VECTORIZER_PORT}" "question-api ${QA_PORT}" "${POSTGRES_SVC} ${POSTGRES_PORT}" "${REDIS_SVC} ${REDIS_PORT}"; do
   read -r label port <<<"${spec}"
   holder="$(port_holder "${port}")"
   if [[ -n "${holder}" ]]; then
@@ -111,11 +116,17 @@ if (( BLOCKED )); then
   exit 1
 fi
 
+if ! kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1; then
+  echo "ERROR: namespace '${NAMESPACE}' does not exist (nothing to forward)." >&2
+  exit 1
+fi
+
 # --- launch -------------------------------------------------------------------
 echo "Forwarding (namespace=${NAMESPACE}):"
 echo "  http://localhost:${VECTORIZER_PORT}     -> svc/vectorizer:8000"
 echo "  http://localhost:${QA_PORT}             -> svc/question-api:8000"
 echo "  postgresql://localhost:${POSTGRES_PORT} -> svc/${POSTGRES_SVC}:5432"
+echo "  redis://localhost:${REDIS_PORT}         -> svc/${REDIS_SVC}:6379"
 echo
 
 kubectl -n "${NAMESPACE}" port-forward "svc/vectorizer"      "${VECTORIZER_PORT}:8000" &
@@ -123,6 +134,8 @@ PF_PIDS+=("$!")
 kubectl -n "${NAMESPACE}" port-forward "svc/question-api"    "${QA_PORT}:8000" &
 PF_PIDS+=("$!")
 kubectl -n "${NAMESPACE}" port-forward "svc/${POSTGRES_SVC}" "${POSTGRES_PORT}:5432" &
+PF_PIDS+=("$!")
+kubectl -n "${NAMESPACE}" port-forward "svc/${REDIS_SVC}"    "${REDIS_PORT}:6379" &
 PF_PIDS+=("$!")
 
 wait

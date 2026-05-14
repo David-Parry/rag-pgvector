@@ -7,16 +7,65 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/_Common.ps1"
 
-$RELEASE = if ($env:RELEASE) { $env:RELEASE } else { 'rag' }
-$NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'rag' }
-$TAG = if ($env:TAG) { $env:TAG } else { '0.1.0' }
-$VALUES_FILE = if ($env:VALUES_FILE) { $env:VALUES_FILE } else { '' }
+function Get-RagDotEnvKeys {
+    param([Parameter(Mandatory)][string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return @()
+    }
+    $keys = [System.Collections.Generic.List[string]]::new()
+    Get-Content -LiteralPath $Path | ForEach-Object {
+        $line = $_.TrimEnd("`r")
+        $trim = $line.Trim()
+        if ($trim -eq '' -or $trim.StartsWith('#')) {
+            return
+        }
+        $eq = $trim.IndexOf('=')
+        if ($eq -lt 1) {
+            return
+        }
+        $key = $trim.Substring(0, $eq).Trim()
+        if ($key) {
+            $null = $keys.Add($key)
+        }
+    }
+    return @($keys | Select-Object -Unique)
+}
+
+function Get-RagEnv {
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [string]$Default = ''
+    )
+    $value = [Environment]::GetEnvironmentVariable($Name, 'Process')
+    if ($null -ne $value -and $value -ne '') {
+        return $value
+    }
+    return $Default
+}
 
 $ROOT_DIR = Get-RagRepoRoot
 Set-Location $ROOT_DIR
 
 $envPath = Join-Path $ROOT_DIR '.env'
+$sessionEnvBeforeDotEnv = @{}
+Get-ChildItem Env: | ForEach-Object {
+    $sessionEnvBeforeDotEnv[$_.Name] = $_.Value
+}
+$dotEnvKeys = Get-RagDotEnvKeys -Path $envPath
 Import-RagDotEnv -Path $envPath
+
+# Values already set in the current shell, including values produced by helper
+# scripts such as env_var_artifactory.ps1, should win over .env defaults.
+foreach ($key in $dotEnvKeys) {
+    if ($sessionEnvBeforeDotEnv.ContainsKey($key) -and $sessionEnvBeforeDotEnv[$key] -ne '') {
+        Set-Item -Path "env:$key" -Value $sessionEnvBeforeDotEnv[$key]
+    }
+}
+
+$RELEASE = if ($env:RELEASE) { $env:RELEASE } else { 'rag' }
+$NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'rag' }
+$TAG = if ($env:TAG) { $env:TAG } else { '0.1.0' }
+$VALUES_FILE = if ($env:VALUES_FILE) { $env:VALUES_FILE } else { '' }
 
 if (-not $env:ANTHROPIC_API_KEY) {
     $anthropicKeyFile = if ($env:ANTHROPIC_API_KEY_FILE) {
@@ -50,6 +99,30 @@ function Test-RagRealGovInfoApiKey {
         return $false
     }
     return $env:GOVINFO_API_KEY -ne 'replace-with-govinfo-api-key'
+}
+
+function Convert-RagRedisUrlForHelm {
+    param([string]$RedisUrl)
+
+    $url = if ($RedisUrl) { $RedisUrl.Trim() } else { '' }
+    if (-not $url) {
+        return 'redis://rag-redis-stack:6379'
+    }
+
+    # 127.0.0.1 / localhost inside a pod means the question-api container itself.
+    # host.docker.internal targets the Docker Desktop host, not the Helm Redis service.
+    # The Helm release installs Redis Stack as the in-cluster rag-redis-stack service.
+    if ($url -match '^(?<scheme>rediss?)://(?<host>127\.0\.0\.1|localhost|host\.docker\.internal)(?<rest>(:\d+)?(/.*)?)$') {
+        $scheme = $Matches.scheme
+        $rest = $Matches.rest
+        $path = ''
+        if ($rest -match '(:\d+)?(?<path>/.*)$') {
+            $path = $Matches.path
+        }
+        return "${scheme}://rag-redis-stack:6379$path"
+    }
+
+    return $url
 }
 
 $internalNetwork =
@@ -120,8 +193,12 @@ See README.md and .env.example.
 
 $bedrockBearerTokenValue = if (Test-RagRealBedrockBearerToken) { $env:AWS_BEARER_TOKEN_BEDROCK } else { '' }
 $govinfoApiKeyValue = if (Test-RagRealGovInfoApiKey) { $env:GOVINFO_API_KEY } else { 'DEMO_KEY' }
+$retrievalTopK = Get-RagEnv -Name 'RETRIEVAL_TOP_K' -Default '5'
+$retrievalScoreThreshold = Get-RagEnv -Name 'RETRIEVAL_SCORE_THRESHOLD' -Default '0.25'
+$redisUrl = Convert-RagRedisUrlForHelm -RedisUrl (Get-RagEnv -Name 'LANGGRAPH_REDIS_URL' -Default (Get-RagEnv -Name 'REDIS_URL'))
+$env:LANGGRAPH_REDIS_URL = $redisUrl
 
-if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0) {
+if (-not (Test-RagKubernetesNamespaceExists -Namespace $NAMESPACE)) {
     kubectl create namespace $NAMESPACE
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
@@ -151,19 +228,36 @@ $argsList = @(
     '--set', "anthropic.timeoutSeconds=$(if ($env:ANTHROPIC_TIMEOUT_SECONDS) { $env:ANTHROPIC_TIMEOUT_SECONDS } else { '90' })",
     '--set-string', "govinfo.apiKey=$govinfoApiKeyValue",
     '--set-string', "govinfo.baseUrl=$(if ($env:GOVINFO_BASE_URL) { $env:GOVINFO_BASE_URL } else { 'https://api.govinfo.gov' })",
-    '--set-string', "vectorizer.env.LOG_LEVEL=$(if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { 'DEBUG' })",
-    '--set-string', "vectorizer.env.LOG_FORMAT=$(if ($env:LOG_FORMAT) { $env:LOG_FORMAT } else { 'json' })",
-    '--set-string', "qa.env.LOG_LEVEL=$(if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { 'DEBUG' })",
-    '--set-string', "qa.env.LOG_FORMAT=$(if ($env:LOG_FORMAT) { $env:LOG_FORMAT } else { 'json' })",
+    '--set', "qa.topK=$retrievalTopK",
+    '--set', "qa.scoreThreshold=$retrievalScoreThreshold",
+    '--set-string', "vectorizer.env.LOG_LEVEL=$(Get-RagEnv -Name 'LOG_LEVEL' -Default 'DEBUG')",
+    '--set-string', "vectorizer.env.LOG_FORMAT=$(Get-RagEnv -Name 'LOG_FORMAT' -Default 'json')",
+    '--set-string', "qa.env.LOG_LEVEL=$(Get-RagEnv -Name 'LOG_LEVEL' -Default 'DEBUG')",
+    '--set-string', "qa.env.LOG_FORMAT=$(Get-RagEnv -Name 'LOG_FORMAT' -Default 'json')",
     '--wait',
-    '--timeout', '5m'
+    '--timeout', '2m'
 )
+
+foreach ($envName in @('PGVECTOR_COLLECTION')) {
+    $envValue = Get-RagEnv -Name $envName
+    if ($envValue) {
+        $argsList += @('--set-string', "vectorizer.env.$envName=$envValue")
+        $argsList += @('--set-string', "qa.env.$envName=$envValue")
+    }
+}
+
+foreach ($envName in @('LANGGRAPH_REDIS_URL', 'SESSION_CHECKPOINT_TTL_DAYS', 'SESSION_CHECKPOINT_TTL_REFRESH_ON_READ')) {
+    $envValue = Get-RagEnv -Name $envName
+    if ($envValue) {
+        $argsList += @('--set-string', "qa.env.$envName=$envValue")
+    }
+}
 
 if ($VALUES_FILE) {
     $argsList += @('-f', $VALUES_FILE)
 }
 
-Write-Host "helm upgrade --install $RELEASE <chart> --namespace $NAMESPACE --set image.tag=${TAG} --wait --timeout 5m"
+Write-Host "helm upgrade --install $RELEASE <chart> --namespace $NAMESPACE --set image.tag=${TAG} --wait --timeout 2m"
 & helm @argsList
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

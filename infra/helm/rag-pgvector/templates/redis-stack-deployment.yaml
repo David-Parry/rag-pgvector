@@ -1,0 +1,46 @@
+{{- if .Values.redisStack.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rag.redisStackName" . }}
+  labels:
+    {{- include "rag.componentLabels" (merge (dict "component" "redis-stack") (deepCopy .)) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "rag.componentSelector" (dict "root" . "component" "redis-stack") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "rag.componentSelector" (dict "root" . "component" "redis-stack") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: redis-stack
+          image: "{{ .Values.redisStack.image.repository }}:{{ .Values.redisStack.image.tag }}"
+          imagePullPolicy: {{ .Values.redisStack.image.pullPolicy }}
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.redisStack.resources | nindent 12 }}
+{{- end }}

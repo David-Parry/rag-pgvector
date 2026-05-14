@@ -21,6 +21,12 @@ anthropic:
 govinfo:
   apiKey: "REPLACE_WITH_GOVINFO_API_KEY"
 
+redisStack:
+  enabled: true
+  image:
+    repository: redis/redis-stack-server
+    tag: "latest"
+
 qa:
   topK: 5
   scoreThreshold: 0.25

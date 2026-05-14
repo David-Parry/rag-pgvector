@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `requirements/` directory: `requirements-dev.in` / `requirements-dev.txt` for local development, `docker-vectorizer.in` / `docker-vectorizer.txt` and `docker-question-api.in` / `docker-question-api.txt` for image installs; regenerate fully pinned files with `pip-compile` when needed.
+- [documentation/PYTHON_PIP_WORKFLOW.md](documentation/PYTHON_PIP_WORKFLOW.md) summarizes venv setup, pip-tools, and optional `python -m build`.
+- `scripts/docker/pip_install_with_fallback.sh` and `scripts/docker/prepare_artifactory_for_pip.py` for Docker `pip install` with optional mirror, `.netrc`, and TLS bundle; BuildKit secrets `pip_index_url` and optional `pip_config` (host `pip.ini` as `/etc/pip.conf` via `RAG_DOCKER_PIP_CONFIG_FILE`), plus env `RAG_PIP_INDEX_URL_FILE` / `RAG_DOCKER_PIP_INDEX_URL` (legacy `uv_default_index` / `RAG_UV_*` still supported).
+- `scripts/ps/Check-KubernetesPods.ps1` and `.\Rag.ps1 check-pods` (aliases `pods-status`, `k8s-pods`) to verify pods in a namespace are **Running** and **Ready**; defaults kube context to **docker-desktop** (set `KUBE_CONTEXT=current` to skip switching).
 - `scripts/ps/Restart-QuestionApi.ps1` and `.\Rag.ps1 restart-question-api` (aliases `restart-qa`, `restart-api`) to rollout-restart the question-api Kubernetes Deployment in the configured namespace.
-
 - `question-api` **`POST /ask`** response field **`fromRedisSessionCache`** (default `false`; `true` when the consecutive-duplicate-question path reused the prior turn from Redis session checkpoint without pgvector or LLM). Chat UIs show a **Session cache (Redis)** chip when set.
 
 - LangGraph-backed `POST /ask` in `question-api` with Redis checkpointing (`langgraph`, `langgraph-checkpoint-redis`): required JSON field `sessionId` (UUID) as `thread_id`, state channels `messages` and `aca_truth_turns`, and TTL settings `SESSION_CHECKPOINT_TTL_DAYS` / `SESSION_CHECKPOINT_TTL_REFRESH_ON_READ` plus `LANGGRAPH_REDIS_URL` or `REDIS_URL`.
+- Helm chart support for an in-cluster **Redis Stack** deployment (`redisStack.enabled`, `redis/redis-stack-server`) and `question-api` defaults to the generated `rag-redis-stack` service for LangGraph checkpointing.
+- Port-forward helpers (`scripts/ps/Port-Forward.ps1`, `scripts/port-forward.sh`) forward Redis Stack by default (`REDIS_PORT=6379`, `REDIS_SVC=rag-redis-stack`) and stale-forward cleanup recognizes the Redis service.
 - `question_api/domain/ask_retrieval.py` for shared retrieval thresholding and citation shaping used by the graph.
 - `chat-bot-ui`, `rag-pgvector/chat-bot-ui`, and `rag-pgvector-chat` now send and validate `sessionId` on `/api/chat` before proxying to `question-api`.
 - `scripts/ask.sh` generates or accepts `SESSION_ID` and includes `sessionId` in the `/ask` body.
@@ -21,7 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `evals/` workspace member with a DeepEval retriever benchmark for sweeping pgvector `top_k` and cosine-distance thresholds against `BILLS-115hr1625enr` goldens.
 - `scripts/eval-retrieval.sh` CLI runner plus unit and opt-in integration tests for retriever benchmark coverage.
 
+### Removed
+
+- `uv.lock`, `uv-install.ps1`, and uv-specific Docker scripts: `uv_sync_with_fallback.sh`, `prepare_artifactory_for_uv.py`, `rewrite_uv_lock_for_mirror.py`, `rewrite_uv_lock_for_public_pypi.py`, `check_uv_lock_artifact_access.py`.
+
 ### Changed
+
+- Docker requirement files **`requirements/docker-vectorizer.txt`** and **`requirements/docker-question-api.txt`** install **`-e ./libs/rag-core`** before the app package; **`vectorizer`** and **`question-api`** depend on **`rag-core==0.1.0`** instead of **`rag-core @ file:../libs/rag-core`** so pip does not resolve the path dependency to **`/libs/rag-core`** inside the Linux builder.
+- **Python tooling:** Astral **uv** and **`uv_build`** are replaced by **pip** (PyPI), **`setuptools.build_meta`**, and workspace installs from **`requirements/*.txt`**. Docker images no longer copy `ghcr.io/astral-sh/uv`; they create a venv and `pip install -r` the service requirement file. Host and CI workflows use `python -m venv .venv` and `pip install -r requirements/requirements-dev.txt`; optional **`python -m build`** (PyPA `build` package) produces sdists/wheels per package `[build-system]`.
+- `scripts/ps/env_var_artifactory.ps1` populates **`RAG_DOCKER_PIP_INDEX_URL`** (and optional one-line **`RAG_PIP_INDEX_URL_FILE`**) when using **`RAG_DOCKER_PIP_CONFIG_FILE`** / discovered `pip.ini`, with more permissive **`index-url`** parsing (quotes, comments, `%ProgramData%\pip\pip.ini` candidate).
+- `scripts/ps/Helm-Install.ps1` imports `.env` before resolving release settings, preserves current session values created by helper scripts, maps local Redis URLs (`localhost`, `127.0.0.1`, `host.docker.internal`) to the Helm-installed `redis://rag-redis-stack:6379` service, and forwards runtime Redis/checkpoint/retrieval variables (`LANGGRAPH_REDIS_URL`, `SESSION_CHECKPOINT_*`, `RETRIEVAL_*`) into Helm values so pods do not fall back to localhost defaults.
+- `scripts/eval-retrieval.sh` and `scripts/ps/Eval-Retrieval.ps1` invoke the repo `.venv` Python instead of `uv run`.
+- Root `pyproject.toml` no longer declares `[tool.uv.workspace]` or `[tool.uv.sources]`; dev dependencies are listed in `requirements/requirements-dev.in`.
+- PowerShell and bash helpers: namespace existence checks use discarded kubectl output (`Test-RagKubernetesNamespaceExists` / `>/dev/null 2>&1`) so a **removed** or missing namespace does not spam the console; `Port-Forward.ps1` / `port-forward.sh` exit early if the namespace is absent.
 
 - `AskService` now invokes a compiled LangGraph instead of an inline retrieve-orchestration only.
 - `question-api`: structured logs `ask.langgraph_checkpoint_read` and `ask.langgraph_checkpoint_write` expose `thread_id`, prior/final message and ACA turn counts, and clarify that session state is loaded through the LangGraph checkpointer (for example Redis). When the new user text matches the **immediately previous** user message in the same session (whitespace- and case-normalized), `ask_graph.duplicate_consecutive_question` is emitted and **pgvector similarity search and LLM generation are skipped** for that turn; the graph still completes one step so the checkpointer is updated.

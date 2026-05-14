@@ -1,113 +1,131 @@
-# Docker builds: PyPI mirror (JFrog Artifactory) and TLS
+# Corporate PyPI mirror and TLS for Docker builds (pip)
 
-On some networks, `uv sync` inside the image build fails when downloading wheels from `files.pythonhosted.org` with TLS errors (for example `invalid peer certificate: UnknownIssuer`). That usually means TLS interception or a policy that requires pulling Python packages through an internal mirror such as JFrog Artifactory.
+On some networks, `pip install` inside the image build fails when downloading wheels from `https://pypi.org/simple` or `files.pythonhosted.org` with TLS errors (for example `invalid peer certificate: UnknownIssuer`). That usually means TLS interception or a policy that requires pulling Python packages through an internal mirror such as JFrog Artifactory.
 
-The `vectorizer` and `question-api` Dockerfiles support:
+## What this repository does
 
-- **`UV_DEFAULT_INDEX`** — PEP 503 simple API URL for your Artifactory virtual PyPI repository (replaces public PyPI for that build).
-- **Lockfile rewrite** — `uv.lock` stores absolute `https://files.pythonhosted.org/packages/...` download URLs. Setting `UV_DEFAULT_INDEX` alone does not change those URLs, so the builder runs `scripts/docker/rewrite_uv_lock_for_mirror.py` to point artifacts and registry entries at Artifactory. Wheel paths follow JFrog’s layout: `.../api/pypi/<repo>/packages/packages/<hash>/...` (double `packages`). If you see HTTP 404, confirm repository key and virtual/remote configuration with your Artifactory admin.
-- **Optional `.netrc`** — uv can read JFrog credentials from a standard netrc file (see [uv JFrog integration](https://docs.astral.sh/uv/guides/integration/jfrog/)).
-- **Optional `SSL_CERT_FILE`** — PEM bundle for TLS if the mirror uses a private CA or you must trust an enterprise root (must include every issuer in the chain uv needs; combining public roots with your corporate root is often required).
+- **`/etc/pip.conf` in the builder** — When BuildKit secret **`pip_config`** is provided (`RAG_DOCKER_PIP_CONFIG_FILE`), the install script copies your host **`pip.ini`** / **`pip.conf`** there so `pip install` uses the same **`index-url`**, **`trusted-host`**, **`extra-index-url`**, and related settings as a typical global pip config.
+- **`PIP_INDEX_URL`** — PEP 503 simple API URL for your Artifactory virtual PyPI repository (replaces public PyPI for that build). The Docker builder may also read legacy **`UV_DEFAULT_INDEX`** / `RAG_DOCKER_UV_DEFAULT_INDEX` and map them to the same behavior.
+- **`.netrc`** — When the index URL contains `https://user:token@host/.../simple`, the Docker builder runs `scripts/docker/prepare_artifactory_for_pip.py`: it appends a `machine` block to `/root/.netrc` and prints the **same URL without userinfo** so `PIP_INDEX_URL` does not embed credentials in the environment while pip still authenticates to the mirror host.
+- **Optional PEM bundle** — `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` point at the system CA bundle plus any corporate root appended from the `ssl_cert_bundle` BuildKit secret.
 
-Avoid sharing Docker build logs if your index URL contains credentials. Prefer `.netrc` plus an uncredentialled URL in `uv-default-index.txt`, or rotate tokens if a log may have captured them.
+Avoid sharing Docker build logs if your index URL contains credentials. Prefer `.netrc` plus an uncredentialled URL in `pip-index-url.txt`, or rotate tokens if a log may have captured them.
 
-### Credentials in `uv-default-index.txt` (automatic `.netrc`)
+### Credentials in `pip-index-url.txt` (automatic `.netrc`)
 
-If your secret file uses a URL with `https://user:token@host/.../simple`, the Docker builder runs `scripts/docker/prepare_artifactory_for_uv.py`: it appends a `machine` block to `/root/.netrc` and sets `UV_DEFAULT_INDEX` to the **same URL without userinfo**. That helps tools (including uv) send Basic Auth on **wheel** URLs under `.../packages/packages/...`, not only on the simple index.
+If your secret file uses a URL with `https://user:token@host/.../simple`, the Docker builder runs `prepare_artifactory_for_pip.py`: it appends a `machine` block to `/root/.netrc` and sets `PIP_INDEX_URL` to the **same URL without userinfo**. That helps pip send Basic Auth on wheel URLs under the mirror host, not only on the simple index.
 
-You can still set `RAG_DOCKER_NETRC_FILE` instead; the builder installs that file first, then merges any credentials parsed from the index URL.
+## BuildKit secrets (recommended)
 
-### HTTP 404 on wheels
+### Full host `pip.ini` as `/etc/pip.conf` (recommended when you already use global pip config)
 
-If URLs look like `.../api/pypi/<repo>/packages/packages/...` but Artifactory still returns 404, verify read access to the virtual repository, that the remote repository can reach upstream PyPI to populate the cache, and try a lower concurrency: `UV_CONCURRENT_DOWNLOADS=2` is the default during mirror builds (some Artifactory setups mis-handle concurrent unauthenticated attempts; see [astral-sh/uv#17485](https://github.com/astral-sh/uv/issues/17485)).
-
-## Quick start (BuildKit secrets, recommended)
-
-Create two single-line files (do not commit them). Use the simple index URL your Artifactory admin documents — typical shape:
-
-`https://<host>/artifactory/api/pypi/<repository-name>/simple`
-
-**Option A — credentials in the index URL (basic auth)**
-
-`uv-default-index.txt` (one line, no trailing newline beyond what your editor adds):
-
-```text
-https://<username>:<identity-token>@acadartifactory.jfrog.io/artifactory/api/pypi/<repo>/simple
-```
-
-Build:
+If your Artifactory URL, `trusted-host`, `extra-index-url`, or other pip settings live in your **user-level pip.ini** (Windows: `%APPDATA%\pip\pip.ini`; Linux/macOS: `~/.config/pip/pip.conf` or `~/.pip/pip.conf`), mount that file into the build as secret **`pip_config`**. The install script copies it to **`/etc/pip.conf`** inside the builder so `pip install` uses the same policy as your host.
 
 ```bash
-export RAG_UV_DEFAULT_INDEX_FILE="$(pwd)/uv-default-index.txt"
+export DOCKER_BUILDKIT=1
+export RAG_DOCKER_PIP_CONFIG_FILE="${APPDATA:-$HOME}/pip/pip.ini"   # adjust for your OS
+export RAG_DOCKER_NETRC_FILE="$(pwd)/.netrc"   # optional; if credentials are not embedded in index-url
 bash scripts/docker-desktop-up.sh
 ```
 
-**Option B — `.netrc` for authentication**
-
-`uv-default-index.txt` holds only the HTTPS simple URL (no userinfo). `netrc` contains machine, login, and password per JFrog’s uv guide.
-
-```bash
-export RAG_UV_DEFAULT_INDEX_FILE="$(pwd)/uv-default-index.txt"
-export RAG_DOCKER_NETRC_FILE="$HOME/.netrc"
-bash scripts/docker-desktop-up.sh
-```
-
-On Windows PowerShell from the repo root (adjust paths):
+PowerShell (typical Windows global file):
 
 ```powershell
-$env:RAG_UV_DEFAULT_INDEX_FILE = "$PWD\uv-default-index.txt"
-$env:RAG_DOCKER_NETRC_FILE = "$HOME\_netrc"
+$env:DOCKER_BUILDKIT = '1'
+$env:RAG_DOCKER_PIP_CONFIG_FILE = Join-Path $env:APPDATA 'pip\pip.ini'
+$env:RAG_DOCKER_NETRC_FILE = "$PWD\.netrc"   # optional
 .\scripts\ps\Docker-Desktop-Up.ps1
 ```
 
-If your Windows `pip.ini` already contains the Artifactory `index-url`, use the helper to create the BuildKit secret automatically without printing the index URL:
+`.\scripts\ps\env_var_artifactory.ps1` discovers `%APPDATA%\pip\pip.ini` when it contains `index-url` and sets `RAG_DOCKER_PIP_CONFIG_FILE` automatically (unless you already set a one-line `RAG_PIP_INDEX_URL_FILE`).
 
-```powershell
-.\scripts\ps\env_var_artifactory.ps1
+Precedence inside the builder: **`PIP_INDEX_URL` / `pip_index_url` / `uv_default_index`** are applied first; if none are set, the script reads **`global.index-url`** from `/etc/pip.conf` (after copying `pip_config`) for mirror detection and optional `.netrc` merging when the URL contains userinfo.
+
+### One-line index URL file
+
+Create a one-line file with your PEP 503 simple URL (with or without userinfo, per your Artifactory policy):
+
+`pip-index-url.txt` (one line):
+
+```
+https://acadartifactory.jfrog.io/artifactory/api/pypi/npm/simple
 ```
 
-**Optional corporate CA bundle** (PEM file trusted by uv for the whole build):
+Bash:
 
 ```bash
-export RAG_DOCKER_SSL_CERT_BUNDLE_FILE="$(pwd)/combined-ca-bundle.pem"
+export DOCKER_BUILDKIT=1
+export RAG_PIP_INDEX_URL_FILE="$(pwd)/pip-index-url.txt"
+export RAG_DOCKER_NETRC_FILE="$(pwd)/.netrc"   # optional; only if you do not embed userinfo in the URL
+bash scripts/docker-desktop-up.sh
 ```
 
-## Direct `docker build`
+PowerShell:
 
-Use the same secret ids as in the Dockerfiles:
+```powershell
+$env:DOCKER_BUILDKIT = '1'
+$env:RAG_PIP_INDEX_URL_FILE = "$PWD\pip-index-url.txt"
+$env:RAG_DOCKER_NETRC_FILE = "$PWD\.netrc"   # optional
+.\scripts\ps\Docker-Desktop-Up.ps1
+```
+
+**Optional corporate CA bundle** (PEM file trusted by pip for the whole build):
+
+```bash
+export RAG_DOCKER_SSL_CERT_BUNDLE_FILE="$(pwd)/corp-ca-bundle.pem"
+```
+
+## Manual `docker build`
 
 ```bash
 docker build \
-  --secret id=uv_default_index,src=./uv-default-index.txt \
-  --secret id=netrc,src="$HOME/.netrc" \
-  --secret id=ssl_cert_bundle,src=./combined-ca-bundle.pem \
-  -t rag-pgvector/vectorizer:0.1.0 \
+  --secret id=pip_config,src="$HOME/.config/pip/pip.conf" \
+  --secret id=pip_index_url,src=./pip-index-url.txt \
+  --secret id=netrc,src=./.netrc \
+  --secret id=ssl_cert_bundle,src=./corp-ca-bundle.pem \
   -f vectorizer/Dockerfile .
 ```
 
-Omit any `--secret` you do not need.
+You can pass **`pip_config` alone** when `index-url` (and any `trusted-host` / `extra-index-url`) are defined in that file.
 
-## Less secure: build-arg
+`PIP_INDEX_URL` can be passed as `--build-arg` (credentials may appear in build history). The helper scripts honor `RAG_DOCKER_PIP_INDEX_URL` and legacy `RAG_DOCKER_UV_DEFAULT_INDEX`.
 
-`UV_DEFAULT_INDEX` can be passed as a build-arg (credentials may appear in build history). The helper scripts honor `RAG_DOCKER_UV_DEFAULT_INDEX`.
+## Local `pip install` on the host
 
-## Local `uv sync` on the host
+Use the same index as in Docker when needed:
 
-The same environment variables uv documents apply outside Docker: `UV_DEFAULT_INDEX` and, for named indexes in `pyproject.toml`, `UV_INDEX_<NAME>_USERNAME` / `UV_INDEX_<NAME>_PASSWORD`. See [uv package indexes](https://docs.astral.sh/uv/concepts/indexes/) and [JFrog](https://docs.astral.sh/uv/guides/integration/jfrog/).
+```bash
+export PIP_INDEX_URL="https://your-mirror/.../simple"
+python -m pip install -r requirements/requirements-dev.txt
+```
 
-## Environment variables (helper scripts)
+See [pip user guide: configuration](https://pip.pypa.io/en/stable/topics/configuration/) and your mirror vendor’s documentation for authentication.
+
+## Environment variables (summary)
 
 | Variable | Purpose |
 |----------|---------|
-| `RAG_UV_DEFAULT_INDEX_FILE` | Path to a file whose contents set `UV_DEFAULT_INDEX` during the build (BuildKit secret `uv_default_index`). |
-| `RAG_DOCKER_NETRC_FILE` | Path to `.netrc` installed as `/root/.netrc` for the `uv sync` step only (BuildKit secret `netrc`). |
-| `RAG_DOCKER_SSL_CERT_BUNDLE_FILE` | PEM bundle for `SSL_CERT_FILE` during `uv sync` (BuildKit secret `ssl_cert_bundle`). |
-| `RAG_DOCKER_UV_DEFAULT_INDEX` | Pass-through to `--build-arg UV_DEFAULT_INDEX` (avoid for secrets). |
+| `RAG_DOCKER_PIP_CONFIG_FILE` | Path to your host **pip.ini** / **pip.conf** mounted as BuildKit secret `pip_config` and installed as `/etc/pip.conf` for the `pip install` step. |
+| `RAG_PIP_INDEX_URL_FILE` | Path to a file whose contents set `PIP_INDEX_URL` during the build (BuildKit secret `pip_index_url`). |
+| `RAG_UV_DEFAULT_INDEX_FILE` | **Legacy:** same as above but mounts secret `uv_default_index` (still read by `pip_install_with_fallback.sh`). |
+| `RAG_DOCKER_NETRC_FILE` | Path to `.netrc` installed as `/root/.netrc` for the `pip install` step only (BuildKit secret `netrc`). |
+| `RAG_DOCKER_SSL_CERT_BUNDLE_FILE` | PEM bundle appended to the system trust store during the install step (BuildKit secret `ssl_cert_bundle`). |
+| `RAG_DOCKER_PIP_INDEX_URL` | Pass-through to `--build-arg PIP_INDEX_URL` (avoid for secrets). |
+| `RAG_DOCKER_UV_DEFAULT_INDEX` | **Legacy:** same pass-through intent as `PIP_INDEX_URL`. |
 
-Replace `<repo>` and hostnames with values from your Artifactory PyPI virtual repository configuration.
+## Build backend (setuptools)
 
-## Build backend (`hatchling` / `uv_build`)
+Workspace packages declare `[build-system]` with **setuptools** (`setuptools.build_meta`). The default `python:3.12-slim-bookworm` image includes enough tooling for `pip` to install build dependencies from your mirror or from PyPI.
 
-Workspace packages in this repository declare `[build-system]` with **Astral `uv_build`**, not Hatchling. The `uv` used in Docker (`ghcr.io/astral-sh/uv`) embeds a compatible `uv_build`, so the builder typically does **not** need to download a separate build-backend wheel from your mirror.
+If resolution errors reference a missing build dependency on an air-gapped mirror, ensure your virtual repository proxies upstream PyPI for build backends, or set `PIP_EXTRA_INDEX_URL` if your security policy allows it.
 
-If you still see resolution errors for a third-party build backend on an older branch, either ensure your virtual repository proxies upstream PyPI for build dependencies, or set an additional index (for example `UV_EXTRA_INDEX_URL`) per [uv package indexes](https://docs.astral.sh/uv/concepts/indexes/) if your security policy allows it.
+## Optional: PyPA `build`
+
+To produce sdists or wheels from a clean tree:
+
+```bash
+pip install build
+cd question-api && python -m build
+```
+
+This invokes the package’s declared `[build-system]` (setuptools).

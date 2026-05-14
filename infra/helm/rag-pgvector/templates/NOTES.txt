@@ -2,6 +2,7 @@ rag-pgvector deployed.
 
 Pods:
   - {{ include "rag.fullname" . }}-postgres            (postgres + pgvector)
+  - {{ include "rag.redisStackName" . }}           (Redis Stack)
   - {{ include "rag.fullname" . }}-vectorizer          (POST /ingest)
   - {{ include "rag.fullname" . }}-question-api        (POST /ask)
 
@@ -12,5 +13,6 @@ Port-forward from the laptop:
   kubectl port-forward -n {{ .Release.Namespace }} svc/vectorizer    8001:{{ .Values.vectorizer.service.port }}
   kubectl port-forward -n {{ .Release.Namespace }} svc/question-api  8002:{{ .Values.qa.service.port }}
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "rag.fullname" . }}-postgres 5432:{{ .Values.postgres.service.port }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "rag.redisStackName" . }} 6379:{{ .Values.redisStack.service.port }}
 
 Or run: bash scripts/port-forward.sh

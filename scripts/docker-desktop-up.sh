@@ -51,11 +51,14 @@ add_secret_file() {
   PY_APP_BUILD_ARGS+=(--secret "id=${secret_id},src=${file_path}")
 }
 
-if [[ -n "${RAG_DOCKER_UV_DEFAULT_INDEX:-}" ]]; then
-  PY_APP_BUILD_ARGS+=(--build-arg "UV_DEFAULT_INDEX=${RAG_DOCKER_UV_DEFAULT_INDEX}")
+PIP_INDEX_BUILD_ARG="${RAG_DOCKER_PIP_INDEX_URL:-${RAG_DOCKER_UV_DEFAULT_INDEX:-}}"
+if [[ -n "${PIP_INDEX_BUILD_ARG}" ]]; then
+  PY_APP_BUILD_ARGS+=(--build-arg "PIP_INDEX_URL=${PIP_INDEX_BUILD_ARG}")
 fi
+add_secret_file RAG_PIP_INDEX_URL_FILE pip_index_url
 add_secret_file RAG_UV_DEFAULT_INDEX_FILE uv_default_index
 add_secret_file RAG_DOCKER_NETRC_FILE netrc
+add_secret_file RAG_DOCKER_PIP_CONFIG_FILE pip_config
 
 if [[ -z "${RAG_DOCKER_SSL_CERT_BUNDLE_FILE:-}" && "$(uname -s)" == "Darwin" && "$(command -v security || true)" ]]; then
   GENERATED_CA_BUNDLE="$(mktemp "${TMPDIR:-/tmp}/rag-docker-ca-bundle.XXXXXX.pem")"

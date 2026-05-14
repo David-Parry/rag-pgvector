@@ -116,7 +116,7 @@ if ((Invoke-RagKubectlProbe -Arguments @('version', '--request-timeout=5s')) -ne
     exit 1
 }
 
-if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0) {
+if (-not (Test-RagKubernetesNamespaceExists -Namespace $NAMESPACE)) {
     kubectl create namespace $NAMESPACE
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
@@ -125,8 +125,15 @@ if ((Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $NAMESPACE)) -ne 0)
 
 # Optional corporate PyPI / TLS — see documentation/DOCKER_PYPI_MIRROR.md
 $pyAppBuildArgs = @()
-if ($env:RAG_DOCKER_UV_DEFAULT_INDEX) {
-    $pyAppBuildArgs += '--build-arg', "UV_DEFAULT_INDEX=$($env:RAG_DOCKER_UV_DEFAULT_INDEX)"
+$pipIndexArg = $env:RAG_DOCKER_PIP_INDEX_URL
+if (-not $pipIndexArg) {
+    $pipIndexArg = $env:RAG_DOCKER_UV_DEFAULT_INDEX
+}
+if ($pipIndexArg) {
+    $pyAppBuildArgs += '--build-arg', "PIP_INDEX_URL=$pipIndexArg"
+}
+if ($env:RAG_PIP_INDEX_URL_FILE) {
+    $pyAppBuildArgs += '--secret', "id=pip_index_url,src=$($env:RAG_PIP_INDEX_URL_FILE)"
 }
 if ($env:RAG_UV_DEFAULT_INDEX_FILE) {
     $pyAppBuildArgs += '--secret', "id=uv_default_index,src=$($env:RAG_UV_DEFAULT_INDEX_FILE)"
@@ -136,6 +143,9 @@ if ($env:RAG_DOCKER_NETRC_FILE) {
 }
 if ($env:RAG_DOCKER_SSL_CERT_BUNDLE_FILE) {
     $pyAppBuildArgs += '--secret', "id=ssl_cert_bundle,src=$($env:RAG_DOCKER_SSL_CERT_BUNDLE_FILE)"
+}
+if ($env:RAG_DOCKER_PIP_CONFIG_FILE) {
+    $pyAppBuildArgs += '--secret', "id=pip_config,src=$($env:RAG_DOCKER_PIP_CONFIG_FILE)"
 }
 
 Write-Host ''

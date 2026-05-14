@@ -1,0 +1,1 @@
+kubectl logs -n rag deploy/rag-question-api --tail=2000 2>$null | Select-String "Calling Vector|calling_vector|vector_skipped"

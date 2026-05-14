@@ -66,8 +66,8 @@ PowerShell also supports parameters:
 ## Tests
 
 ```bash
-uv run pytest -q
-uv run pytest -m integration evals/tests/
+.venv/bin/pytest -q
+.venv/bin/pytest -m integration evals/tests/
 ```
 
 The default test tier uses fake ports and stub metrics, so it does not call a database, Bedrock, Anthropic, or Ollama. The integration test skips unless credentials, a reachable pgvector database, and ingested `BILLS-115hr1625enr` rows are present.

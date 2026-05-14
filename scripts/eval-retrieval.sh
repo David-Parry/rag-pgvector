@@ -13,6 +13,19 @@
 #
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+if [[ -n "${RAG_PYTHON:-}" ]]; then
+    PYTHON="${RAG_PYTHON}"
+elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
+    PYTHON="$REPO_ROOT/.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON=python3
+else
+    PYTHON=python
+fi
+
 export PACKAGE_ID="${PACKAGE_ID:-BILLS-115hr1625enr}"
 export DEEPEVAL_TOP_K_GRID="${TOP_K_GRID:-${DEEPEVAL_TOP_K_GRID:-3,5,8}}"
 export DEEPEVAL_THRESHOLD_GRID="${THRESHOLD_GRID:-${DEEPEVAL_THRESHOLD_GRID:-0.4,0.6,0.8}}"
@@ -41,7 +54,7 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
     exit 1
 fi
 
-db_netloc="$(uv run python -c 'import os, urllib.parse; url=os.environ["DATABASE_URL"].replace("postgresql+psycopg:", "postgresql:", 1); print(urllib.parse.urlsplit(url).netloc)' 2>/dev/null || true)"
+db_netloc="$("$PYTHON" -c 'import os, urllib.parse; url=os.environ["DATABASE_URL"].replace("postgresql+psycopg:", "postgresql:", 1); print(urllib.parse.urlsplit(url).netloc)' 2>/dev/null || true)"
 db_host="${db_netloc%@*}"
 db_host="${db_host##*@}"
 db_host="${db_host%%:*}"
@@ -51,7 +64,7 @@ if [[ "$db_port" == "$db_netloc" || -z "$db_port" ]]; then
 fi
 
 echo "Checking existing pgvector database at ${db_host}:${db_port} ..." >&2
-uv run python - "$db_host" "$db_port" <<'PY'
+"$PYTHON" - "$db_host" "$db_port" <<'PY'
 import socket
 import sys
 
@@ -86,10 +99,10 @@ mkdir -p "$(dirname "$log_path")"
 : > "$log_path"
 
 if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
-    package_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["PACKAGE_ID"]))')"
-    top_k_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_TOP_K_GRID"]))')"
-    threshold_html="$(uv run python -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_THRESHOLD_GRID"]))')"
-    log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
+    package_html="$("$PYTHON" -c 'import html, os; print(html.escape(os.environ["PACKAGE_ID"]))')"
+    top_k_html="$("$PYTHON" -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_TOP_K_GRID"]))')"
+    threshold_html="$("$PYTHON" -c 'import html, os; print(html.escape(os.environ["DEEPEVAL_THRESHOLD_GRID"]))')"
+    log_path_html="$(LOG_PATH="$log_path" "$PYTHON" -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
     {
         echo '<!doctype html>'
         echo '<html lang="en">'
@@ -122,12 +135,12 @@ else
     } | tee "$report_path"
 fi
 
-if uv run python -m rag_evals.cli 2> >(tee "$log_path" >&2) | tee -a "$report_path"; then
+if "$PYTHON" -m rag_evals.cli 2> >(tee "$log_path" >&2) | tee -a "$report_path"; then
     true
 else
     exit_code=$?
     if [[ "$DEEPEVAL_REPORT_FILE_TYPE" == "html" ]]; then
-        log_path_html="$(LOG_PATH="$log_path" uv run python -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
+        log_path_html="$(LOG_PATH="$log_path" "$PYTHON" -c 'import html, os; print(html.escape(os.environ["LOG_PATH"]))')"
         echo "<section><h2>Error</h2><p>The eval command failed. See the progress log for command output: <code>${log_path_html}</code></p></section>" | tee -a "$report_path" >&2
         {
             echo '</main>'

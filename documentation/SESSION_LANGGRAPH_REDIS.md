@@ -12,6 +12,7 @@ The `question-api` service uses **LangGraph** with a **Redis** checkpointer to p
 ## Redis
 
 - Connection: **`LANGGRAPH_REDIS_URL`** or **`REDIS_URL`**.
+- The Helm chart installs **Redis Stack** by default and points `question-api` at **`redis://rag-redis-stack:6379`** unless you override `qa.env.LANGGRAPH_REDIS_URL`.
 - Redis must expose **RedisJSON** and **RediSearch** (Redis 8+ includes both; older deployments use **Redis Stack**).
 - TTL: **`SESSION_CHECKPOINT_TTL_DAYS`** (default `5`) with optional **`SESSION_CHECKPOINT_TTL_REFRESH_ON_READ`** (default `true`). Values map to `langgraph-checkpoint-redis` `ttl` options (`default_ttl` is in **minutes** internally).
 

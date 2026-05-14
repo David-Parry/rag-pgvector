@@ -71,3 +71,14 @@ Uses psycopg3 driver (postgresql+psycopg://) which both apps depend on.
 {{- $svc := printf "%s-postgres" (include "rag.fullname" .) -}}
 {{- printf "postgresql+psycopg://%s:%s@%s:%v/%s" .Values.postgres.auth.user .Values.postgres.auth.password $svc .Values.postgres.service.port .Values.postgres.auth.database -}}
 {{- end -}}
+
+{{/*
+Redis Stack URL for the in-cluster LangGraph checkpointer.
+*/}}
+{{- define "rag.redisStackName" -}}
+{{- include "rag.componentName" (dict "root" . "component" "redis-stack") -}}
+{{- end -}}
+
+{{- define "rag.redisUrl" -}}
+{{- printf "redis://%s:%v" (include "rag.redisStackName" .) .Values.redisStack.service.port -}}
+{{- end -}}

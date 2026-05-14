@@ -103,11 +103,27 @@ function Invoke-RagKubectlProbe {
     }
 }
 
+function Test-RagKubernetesNamespaceExists {
+    <#
+    .SYNOPSIS
+      Returns whether a Kubernetes namespace exists.
+    .DESCRIPTION
+      Uses kubectl with stdout/stderr fully discarded (same redirect strategy as
+      Invoke-RagKubectlProbe) so missing namespaces do not print API errors to the console.
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$Namespace
+    )
+    return (Invoke-RagKubectlProbe -Arguments @('get', 'namespace', $Namespace)) -eq 0
+}
+
 function Get-RagStalePortForwardInfo {
     param(
         [Parameter(Mandatory)]
         [string]$Namespace,
-        [string]$PostgresSvc = 'rag-postgres'
+        [string]$PostgresSvc = 'rag-postgres',
+        [string]$RedisSvc = 'rag-redis-stack'
     )
     $list = [System.Collections.Generic.List[object]]::new()
     foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'kubectl.exe'" -ErrorAction SilentlyContinue) {
@@ -127,7 +143,8 @@ function Get-RagStalePortForwardInfo {
         $hitsSvc =
             $cmd -match 'svc/vectorizer' -or
             $cmd -match 'svc/question-api' -or
-            $cmd -match ([regex]::Escape("svc/$PostgresSvc"))
+            $cmd -match ([regex]::Escape("svc/$PostgresSvc")) -or
+            $cmd -match ([regex]::Escape("svc/$RedisSvc"))
         if (-not $hitsSvc) {
             continue
         }

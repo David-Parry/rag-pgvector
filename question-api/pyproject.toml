@@ -5,7 +5,7 @@ description = "FastAPI pod that answers grounded questions using Titan v2 retrie
 readme = "README.md"
 requires-python = "==3.12.*"
 dependencies = [
-    "rag-core",
+    "rag-core==0.1.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.9.0",
@@ -20,12 +20,11 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.14,<0.12"]
-build-backend = "uv_build"
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.uv.build-backend]
-module-name = "question_api"
-module-root = "src"
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.scripts]
 question-api = "question_api.main:run"

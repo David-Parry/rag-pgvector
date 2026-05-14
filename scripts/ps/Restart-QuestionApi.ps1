@@ -29,10 +29,20 @@ if ($env:KUBE_CONTEXT) {
     kubectl config use-context $env:KUBE_CONTEXT.Trim() | Out-Null
 }
 
+if (-not (Test-RagKubernetesNamespaceExists -Namespace $NAMESPACE)) {
+    Write-Error @"
+Namespace '$NAMESPACE' does not exist.
+
+Create the namespace (e.g. run Helm install) or set `$env:NAMESPACE` to an existing namespace.
+"@
+    exit 1
+}
+
 $label = 'app.kubernetes.io/component=question-api'
 $raw = kubectl get deploy -n $NAMESPACE -l $label -o json 2>$null
 if (-not $raw) {
-    Write-Error "kubectl get deploy failed for namespace '$NAMESPACE'. Is the cluster reachable?"
+    Write-Error "No Deployment with label $label in namespace '$NAMESPACE', or kubectl could not read the cluster."
+    exit 1
 }
 
 $json = $raw | ConvertFrom-Json
@@ -43,6 +53,7 @@ No Deployment with label $label in namespace '$NAMESPACE'.
 Install the chart first: .\Rag.ps1 helm-install
 Ensure question-api is enabled (qa.enabled) in your Helm values.
 "@
+    exit 1
 }
 
 $items = @($json.items)

@@ -3,6 +3,7 @@ name: rag-pgvector
 description: |
   Umbrella chart that deploys the rag-pgvector RAG stack:
     - postgres + pgvector (custom postgres:17 + apt-installed postgresql-17-pgvector)
+    - Redis Stack (LangGraph checkpoint/session state)
     - vectorizer pod (PDF ingestion -> Titan v2 embeddings -> pgvector)
     - question-api pod (grounded RAG over pgvector with direct Anthropic Claude)
 type: application

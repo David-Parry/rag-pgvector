@@ -21,7 +21,7 @@ todos:
     content: Hand-curate 4-6 goldens for `BILLS-115hr1625enr` in `evals/src/rag_evals/data/goldens_bills_115hr1625enr.json` covering Sec. 7038-7040 and Sec. 1004 (the questions `scripts/ask.sh` already targets)
     status: pending
   - id: tests-unit
-    content: Add `evals/tests/test_benchmark_unit.py` using `FakeStore` + `StubJudge` to assert sweep cardinality, threshold filtering, and metadata-filter forwarding — runs in default `uv run pytest -q`
+    content: Add `evals/tests/test_benchmark_unit.py` using `FakeStore` + `StubJudge` to assert sweep cardinality, threshold filtering, and metadata-filter forwarding — runs in default `.venv/bin/pytest -q`
     status: pending
   - id: tests-integration
     content: Add `evals/tests/test_benchmark_integration.py` (`@pytest.mark.integration`) that skips when keys/DB/data are missing and asserts ContextualRecall >= 0.5 at (k=6, t=0.80)
@@ -33,7 +33,7 @@ todos:
     content: Write `evals/README.md` and update root `README.md` (Repo layout tree + Tests section line for `pytest -m integration evals/tests/`)
     status: pending
   - id: verify
-    content: Run `uv sync --all-packages`, `uv run ruff check`, `uv run mypy`, and `uv run pytest -q`; confirm the new unit test passes and the integration test is collected-and-skipped without ingest
+    content: Run `pip install -r requirements/requirements-dev.txt`, `.venv/bin/ruff check`, `.venv/bin/mypy`, and `.venv/bin/pytest -q`; confirm the new unit test passes and the integration test is collected-and-skipped without ingest
     status: pending
 isProject: false
 ---
@@ -149,31 +149,17 @@ Two-tier, matching the README's stated convention ("A separate `@pytest.mark.int
    - Uses `FakeStore` (copy/re-import of [question-api/tests/_question_api_fakes.py](question-api/tests/_question_api_fakes.py)) seeded with deterministic `RetrievedChunk`s.
    - Uses a `StubJudge(DeepEvalBaseLLM)` that returns fixed strings (DeepEval metrics that LLM-judge in unit mode get monkeypatched via `metric.measure = lambda tc: 0.9` — DeepEval supports this).
    - Asserts: one `BenchmarkRow` per `(k, t)` cell; threshold filtering removes high-distance hits before metrics run; metadata_filter is forwarded to `store.similarity_search`.
-   - Runs in `uv run pytest -q` with no network.
+   - Runs in `.venv/bin/pytest -q` with no network.
 
 2. **`evals/tests/test_benchmark_integration.py`** — `@pytest.mark.integration`:
    - Skips if `AWS_BEARER_TOKEN_BEDROCK` / `ANTHROPIC_API_KEY` / `DATABASE_URL` reachable check fails.
    - Skips if `select count(*) from rag_chunks where metadata->>'packageId'='BILLS-115hr1625enr'` returns 0 (i.e. user hasn't run `scripts/ingest-package.sh BILLS-115hr1625enr` yet).
    - Builds the live container via `composition.build_container(EvalsSettings())`, runs the benchmark with the default grid, asserts `ContextualRecall >= 0.5` at `(k=6, t=0.80)` — the same defaults `scripts/ask.sh` ships with — so a regression in either retrieval or the embedding model breaks CI.
-   - Run via `uv run pytest -m integration evals/tests/`.
+   - Run via `.venv/bin/pytest -m integration evals/tests/`.
 
 ## Workspace + tooling wiring
 
-`pyproject.toml` (root) — three small edits:
-
-```toml
-[tool.uv.workspace]
-members = ["vectorizer", "question-api", "libs/rag-core", "evals"]   # add "evals"
-
-[tool.ruff]
-src = ["libs/rag-core/src", "vectorizer/src", "question-api/src", "evals/src"]   # add evals/src
-
-[tool.mypy]
-mypy_path = ["libs/rag-core/src", "vectorizer/src", "question-api/src", "evals/src"]   # add evals/src
-
-[tool.pytest.ini_options]
-testpaths = ["libs/rag-core/tests", "vectorizer/tests", "question-api/tests", "evals/tests", "tests"]   # add evals/tests
-```
+Root `pyproject.toml` includes `evals/src` in `tool.ruff.src`, `tool.mypy.mypy_path`, and `tool.pytest.ini_options.testpaths`. The `evals` package uses **setuptools** and path dependencies on `libs/rag-core` and `question-api` (see `evals/pyproject.toml`).
 
 ## CLI runner
 
@@ -183,7 +169,7 @@ testpaths = ["libs/rag-core/tests", "vectorizer/tests", "question-api/tests", "e
 PACKAGE_ID="${PACKAGE_ID:-BILLS-115hr1625enr}" \
 TOP_K_GRID="${TOP_K_GRID:-3,5,8}" \
 THRESHOLD_GRID="${THRESHOLD_GRID:-0.4,0.6,0.8}" \
-uv run python -m rag_evals.cli
+./.venv/bin/python -m rag_evals.cli
 ```
 
 `rag_evals.cli` prints a markdown table of `(top_k, threshold) -> precision / recall / relevancy` per cell, plus the best (k, t) per metric. Optional, but matches the operator-driven UX of `scripts/ingest-package.sh` + `scripts/ask.sh`.
@@ -191,7 +177,7 @@ uv run python -m rag_evals.cli
 ## Docs
 
 - `evals/README.md` — short, mirrors structure of `vectorizer/README.md` and `question-api/README.md`.
-- `README.md` (root) — add `evals/` to the "Repo layout" tree and one line to the "Tests" section: "Retriever benchmark: `uv run pytest -m integration evals/tests/` (requires `BILLS-115hr1625enr` ingested)."
+- `README.md` (root) — add `evals/` to the "Repo layout" tree and one line to the "Tests" section: "Retriever benchmark: `.venv/bin/pytest -m integration evals/tests/` (requires `BILLS-115hr1625enr` ingested)."
 
 ## Out of scope (deliberately, mirroring repo's existing scope discipline)
 

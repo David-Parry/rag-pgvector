@@ -1,9 +1,9 @@
 # rag-pgvector
 
-A `uv`-managed Python 3.12 monorepo for a small, opinionated RAG stack:
+A **pip**-managed Python 3.12 monorepo for a small, opinionated RAG stack:
 
 - `vectorizer/` — FastAPI pod that pulls PDFs from [api.govinfo.gov](https://api.govinfo.gov), extracts text with PyMuPDF, splits with LangChain, embeds with an approved AWS Bedrock embedding model, and upserts into a vanilla `postgres:17 + apt postgresql-17-pgvector` database.
-- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks direct Anthropic Claude to answer using only that context. Each request carries a client `sessionId` (UUID); LangGraph checkpoints per-thread state in Redis (messages plus per-turn ACA snapshots).
+- `question-api/` — FastAPI pod that answers strictly-grounded questions: it embeds the incoming question, retrieves top-k chunks from pgvector with a metadata filter and similarity threshold, then asks direct Anthropic Claude to answer using only that context. Each request carries a client `sessionId` (UUID); LangGraph checkpoints per-thread state in the Helm-installed Redis Stack service (messages plus per-turn ACA snapshots).
 - `evals/` — DeepEval retriever benchmark that sweeps pgvector `top_k` and cosine-distance thresholds against hand-curated goldens for `BILLS-115hr1625enr`.
 - `libs/rag-core/` — shared `Protocol` ports, the grounded system prompt, the chunk splitter, settings, and structlog config (DRY for both apps without coupling their deployments).
 - `infra/` — custom `postgres-pgvector` Dockerfile and an umbrella Helm chart that deploys all three pods (`postgres`, `vectorizer`, `question-api`) into Docker Desktop's built-in Kubernetes.
@@ -89,7 +89,7 @@ flowchart TD
     Client["curl / client"] -->|"POST /ask AskRequest<br/>question, sessionId, metadata, topK, threshold"| Route["FastAPI route<br/>question_api/api/routes.py"]
     Route --> Svc["AskService + LangGraph<br/>question_api/domain/ask_service.py<br/>ask_graph.py"]
 
-    Svc -->|"config.thread_id = sessionId<br/>Redis checkpointer"| Redis[("Redis 8+ or Redis Stack<br/>langgraph-checkpoint-redis")]
+    Svc -->|"config.thread_id = sessionId<br/>Redis checkpointer"| Redis[("Redis Stack<br/>langgraph-checkpoint-redis")]
     Svc -->|"store.similarity_search<br/>question, k, metadata_filter"| Retr["PgVectorRetrieverAdapter<br/>question_api/adapters/pgvector_retriever.py"]
     Retr -->|"asimilarity_search_with_score"| Lc["langchain_postgres<br/>PGVectorStore"]
 
@@ -123,17 +123,17 @@ Notes:
 
 - The question is embedded by `TitanEmbeddingsAdapter.embed_query` *inside* `PGVectorStore.asimilarity_search_with_score` — `AskService` never touches embeddings directly.
 - pgvector returns cosine **distance**, so `filter_chunks_by_threshold` in `question_api/domain/ask_retrieval.py` (same rule as the former `AskService._apply_threshold`) keeps chunks with `score <= threshold` (lower = more similar).
-- Each `POST /ask` requires `sessionId` (UUID), used as LangGraph `thread_id`. Session checkpoints live in Redis (`LANGGRAPH_REDIS_URL` or `REDIS_URL`) with TTL from `SESSION_CHECKPOINT_TTL_DAYS` (default 5 days, `SESSION_CHECKPOINT_TTL_REFRESH_ON_READ`). State channels include `messages` and per-turn `aca_truth_turns` keyed to message ids.
+- Each `POST /ask` requires `sessionId` (UUID), used as LangGraph `thread_id`. Session checkpoints live in Redis Stack (`LANGGRAPH_REDIS_URL`, defaulted by Helm to `redis://rag-redis-stack:6379`) with TTL from `SESSION_CHECKPOINT_TTL_DAYS` (default 5 days, `SESSION_CHECKPOINT_TTL_REFRESH_ON_READ`). State channels include `messages` and per-turn `aca_truth_turns` keyed to message ids.
 - If nothing survives the threshold, the service short-circuits with the fixed `"I don't know based on the provided context."` reply and never calls the LLM (no spend, no hallucination surface).
 - Grounding happens in `rag_core.prompts.build_user_prompt`: kept chunks become a numbered `CONTEXT:` block carrying `packageId`, `sourceUrl`, and `pageNumber`, paired with `SYSTEM_PROMPT_QA` which forbids tool use and mandates a trailing `Sources:` section.
 - The LLM is a `Protocol` port implemented by direct Anthropic Claude API calls in `question_api/core/composition.py`.
 
 ## Prerequisites
 
-- macOS or Linux with [Docker Desktop](https://www.docker.com/products/docker-desktop/), with **Kubernetes enabled**: `Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & restart`. The cluster appears in `kubectl config get-contexts` as `docker-desktop`.
-- `uv` ≥ 0.5 (`brew install uv`)
-- `helm` ≥ 3.13 (`brew install helm`)
-- `kubectl` (`brew install kubectl`)
+- **Windows**, macOS, or Linux with [Docker Desktop](https://www.docker.com/products/docker-desktop/), with **Kubernetes enabled**: `Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & restart`. The cluster appears in `kubectl config get-contexts` as `docker-desktop`.
+- **Python** 3.12 and **pip** (create a repo-local venv: `python -m venv .venv`, then `pip install -r requirements/requirements-dev.txt`). Optional: [pip-tools](https://pip-tools.readthedocs.io/) (`pip-compile`) to refresh pinned requirement files from the `requirements/*.in` inputs. See [documentation/PYTHON_PIP_WORKFLOW.md](documentation/PYTHON_PIP_WORKFLOW.md).
+- `helm` ≥ 3.13 (macOS/Linux: `brew install helm`; Windows: `winget install Helm.Helm` or [Helm install docs](https://helm.sh/docs/intro/install/))
+- `kubectl` (macOS/Linux: `brew install kubectl`; Windows: `winget install Kubernetes.kubectl` or use kubectl bundled with Docker Desktop)
 
 > Docker Desktop's built-in Kubernetes shares the Docker daemon's image store, so locally-built images are visible to the cluster without any push or `kind load` step. We do not use kind, minikube, or any external cluster tool.
 
@@ -174,6 +174,8 @@ For local Helm deployments, `scripts/helm-install.sh` and `scripts/ps/Helm-Insta
 
 ## Local pod workflow (default)
 
+### Bash (macOS / Linux / WSL)
+
 ```bash
 # 1. Verify Docker Desktop Kubernetes is enabled and build the three images
 bash scripts/docker-desktop-up.sh
@@ -185,9 +187,23 @@ bash scripts/helm-install.sh
 bash scripts/port-forward.sh
 ```
 
-**Restart `question-api` only (after code or image changes):** from `scripts\ps`, run `.\Rag.ps1 restart-question-api` (or `.\Restart-QuestionApi.ps1`). That performs `kubectl rollout restart` on the Deployment labeled `app.kubernetes.io/component=question-api` in namespace `rag` (override with `$env:NAMESPACE`). Rebuild the image with `.\Rag.ps1 docker-up` when you need new application code inside the cluster.
+### Windows (PowerShell, Docker Desktop Kubernetes)
 
-Then:
+Use the scripts under `scripts\ps\` (or the dispatcher `.\Rag.ps1`). **Order matters:** build images and load them into the cluster **before** Helm installs the release, so pods start with local `rag-pgvector/*:0.1.0` images that already exist on the Docker daemon / cluster.
+
+| Step | What to run | Purpose |
+|------|-------------|---------|
+| 0 | Copy `.env.example` to `.env` and fill keys (Anthropic, Bedrock embedding, GovInfo, `DATABASE_URL`, Redis URL for LangGraph, etc.) | Helm and apps read credentials from `.env` |
+| 1a | **If** Docker builds can reach public PyPI: `cd scripts\ps` then `.\Rag.ps1 docker-desktop-up` (or `.\Docker-Desktop-Up.ps1`) | Build `postgres`, `vectorizer`, `question-api` images and import them into Docker Desktop Kubernetes |
+| 1b | **If** your network requires an internal PyPI mirror (e.g. JFrog Artifactory): `.\scripts\ps\env_var_artifactory.ps1` **instead of** step 1a | Resolves the package index (from `pip.ini` as `RAG_DOCKER_PIP_CONFIG_FILE`, one-line `RAG_PIP_INDEX_URL_FILE` / legacy `RAG_UV_DEFAULT_INDEX_FILE`, `RAG_DOCKER_PIP_INDEX_URL` / legacy `RAG_DOCKER_UV_DEFAULT_INDEX`) and **runs `Docker-Desktop-Up.ps1` for you**. Do not run both 1a and 1b for the same build. |
+| 2 | `.\Rag.ps1 helm-install` (or `.\Helm-Install.ps1`) | `helm upgrade --install` the chart; loads repo `.env` |
+| 3 | `$env:KILL_STALE = '1'; .\Rag.ps1 port-forward` if stale kubectl forwards hold ports; otherwise `.\Rag.ps1 port-forward` | `kubectl port-forward` for vectorizer, question-api, postgres |
+
+**Flow you should *not* use:** Helm install **before** Docker Desktop Up when you depend on **locally built** images. The chart uses tags such as `rag-pgvector/question-api:0.1.0`; those images must exist after `docker-desktop-up` (or `env_var_artifactory.ps1`) before Helm can schedule healthy pods.
+
+**Restart `question-api` only (after code or image changes):** from `scripts\ps`, run `.\Rag.ps1 restart-question-api` (or `.\Restart-QuestionApi.ps1`). That performs `kubectl rollout restart` on the Deployment labeled `app.kubernetes.io/component=question-api` in namespace `rag` (override with `$env:NAMESPACE`). Rebuild images with `.\Rag.ps1 docker-desktop-up` when you need new application code inside the cluster.
+
+Then use Git Bash or WSL with `scripts/ask.sh`, or native Windows `scripts\ps\Ask.ps1`, or curl against `http://localhost:8001` / `http://localhost:8002` as in the examples below.
 
 ```bash
 # Vectorize a govinfo collection (small sample)
@@ -289,15 +305,17 @@ Notes on the script-level retrieval defaults:
 # Just run the postgres+pgvector image via compose
 docker compose up -d postgres
 
-# Sync the workspace
-uv sync --all-packages
+# Install all workspace packages into .venv (from repo root)
+python -m venv .venv
+.venv\Scripts\pip install -r requirements\requirements-dev.txt   # Windows
+# source .venv/bin/activate && pip install -r requirements/requirements-dev.txt   # macOS/Linux
 
 # Run each service directly on the host
-uv run uvicorn vectorizer.main:app    --reload --port 8001
-uv run uvicorn question_api.main:app  --reload --port 8002
+.venv\Scripts\uvicorn.exe vectorizer.main:app    --reload --port 8001
+.venv\Scripts\uvicorn.exe question_api.main:app  --reload --port 8002
 ```
 
-If you are on a network that blocks or MITMs public PyPI, use an internal mirror (for example JFrog) for both host `uv sync` and image builds. Image builds: `documentation/DOCKER_PYPI_MIRROR.md`.
+If you are on a network that blocks or MITMs public PyPI, use an internal mirror (for example JFrog) for both host `pip install` and image builds. Image builds: `documentation/DOCKER_PYPI_MIRROR.md`.
 
 ## Host Aliases
 
@@ -314,8 +332,8 @@ qa:
 
 ```
 rag-pgvector/
-├── pyproject.toml              # uv workspace root
-├── uv.lock
+├── pyproject.toml              # ruff, mypy, pytest config (no uv workspace)
+├── requirements/               # pip: docker + dev requirement lists (.in / .txt)
 ├── .env.example
 ├── docker-compose.yml          # postgres-only convenience for non-pod dev
 ├── vectorizer/                 # service:  ingest + embed + upsert
@@ -331,8 +349,10 @@ rag-pgvector/
 ## Tests
 
 ```bash
-uv run pytest -q              # 19 tests, no network/services required
+.venv/Scripts/pytest -q              # Windows; or: .venv/bin/pytest -q
 ```
+
+Optional: `pip install build` then `python -m build` in a member package directory produces an sdist/wheel using that package's `[build-system]` (setuptools).
 
 The test suite covers:
 
@@ -344,7 +364,7 @@ The test suite covers:
 - Helm chart smoke tests: `helm lint` + `helm template` in supported `aws.auth.mode` configurations.
 
 A separate `@pytest.mark.integration` marker is reserved for testcontainers-backed adapter tests against a real pgvector — these are opt-in (run with `pytest -m integration`).
-Retriever benchmark integration: `uv run pytest -m integration evals/tests/` (requires `BILLS-115hr1625enr` ingested).
+Retriever benchmark integration: `.venv/Scripts/pytest -m integration evals/tests/` (requires `BILLS-115hr1625enr` ingested).
 
 ## Things explicitly out of scope
 

@@ -1,10 +1,10 @@
 # Convenience compose file for local non-pod development.
 # Brings up the postgres-pgvector image so you can run vectorizer / question-api
-# directly on the host with `uv run`.
+# directly on the host with the repo venv (after `pip install -r requirements/requirements-dev.txt`).
 #
 #   docker compose up -d postgres
-#   uv run uvicorn vectorizer.main:app --reload --port 8001
-#   uv run uvicorn question_api.main:app --reload --port 8002
+#   .venv/Scripts/uvicorn vectorizer.main:app --reload --port 8001
+#   .venv/Scripts/uvicorn question_api.main:app --reload --port 8002
 
 services:
   postgres:

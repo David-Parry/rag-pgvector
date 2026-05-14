@@ -1,12 +1,13 @@
 """Ensure JFrog credentials apply to artifact downloads, not only the simple index.
 
-Some uv versions do not attach Basic Auth from a credentialed ``UV_DEFAULT_INDEX`` to
-per-file URLs under the same host. A ``~/.netrc`` entry for the Artifactory host causes
-credentials to be sent on every request to that machine.
+pip may not attach Basic Auth from a credentialed ``PIP_INDEX_URL`` to every wheel
+URL. A ``~/.netrc`` entry for the Artifactory host causes credentials to be sent on
+requests to that host.
 
-Reads ``UV_DEFAULT_INDEX``. If it contains HTTP userinfo, merges a ``machine`` block into
-``UV_NETRC_FILE`` (default ``/root/.netrc``) and prints
-the same URL **without** userinfo to stdout for the shell to ``export UV_DEFAULT_INDEX="$(…)"``.
+Reads ``PIP_INDEX_URL``, or ``UV_DEFAULT_INDEX`` for backward compatibility. If the
+URL contains HTTP userinfo, merges a ``machine`` block into ``PIP_NETRC_FILE`` (default
+``/root/.netrc``) and prints the same URL **without** userinfo to stdout for the shell
+to ``export PIP_INDEX_URL="$(…)"``.
 """
 
 from __future__ import annotations
@@ -21,7 +22,6 @@ def _append_netrc(path: Path, machine: str, login: str, password: str) -> None:
     parts: list[str] = []
     if path.is_file() and path.stat().st_size > 0:
         parts.append(path.read_text(encoding="utf-8").rstrip())
-    # netrc: empty login is valid (e.g. JFrog identity token with empty username)
     parts.append(f"machine {machine}\nlogin {login}\npassword {password}\n")
     path.write_text("\n".join(parts).strip() + "\n", encoding="utf-8")
     try:
@@ -30,8 +30,15 @@ def _append_netrc(path: Path, machine: str, login: str, password: str) -> None:
         pass
 
 
+def _index_url() -> str:
+    return (
+        os.environ.get("PIP_INDEX_URL", "").strip()
+        or os.environ.get("UV_DEFAULT_INDEX", "").strip()
+    )
+
+
 def main() -> int:
-    raw = os.environ.get("UV_DEFAULT_INDEX", "").strip()
+    raw = _index_url()
     if not raw:
         print("")
         return 0
@@ -60,7 +67,8 @@ def main() -> int:
     else:
         clean_netloc = host
 
-    _append_netrc(Path(os.environ.get("UV_NETRC_FILE", "/root/.netrc")), host, login, password)
+    netrc_path = Path(os.environ.get("PIP_NETRC_FILE", "/root/.netrc"))
+    _append_netrc(netrc_path, host, login, password)
 
     clean = urlunparse(
         (

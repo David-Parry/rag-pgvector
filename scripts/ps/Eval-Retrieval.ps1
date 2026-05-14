@@ -93,7 +93,28 @@ Set-Location -LiteralPath $repoRoot
 Import-RagDotEnv -Path (Join-Path $repoRoot '.env')
 Import-RagAnthropicApiKey -RepoRoot $repoRoot
 $env:LOG_LEVEL = Get-RagEnvValue -Name 'DEEPEVAL_LOG_LEVEL' -Default 'INFO'
-Test-RagCommand -Name 'uv' -InstallHint 'Install uv from https://docs.astral.sh/uv/.'
+
+function Get-RagVenvPython {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    $win = Join-Path $RepoRoot '.venv\Scripts\python.exe'
+    if (Test-Path -LiteralPath $win) {
+        return (Resolve-Path -LiteralPath $win).Path
+    }
+    $nix = Join-Path $RepoRoot '.venv/bin/python'
+    if (Test-Path -LiteralPath $nix) {
+        return (Resolve-Path -LiteralPath $nix).Path
+    }
+    return $null
+}
+$ragPython = Get-RagVenvPython -RepoRoot $repoRoot
+if (-not $ragPython) {
+    Write-Error @'
+Python venv not found. From the repo root run:
+  python -m venv .venv
+  .\.venv\Scripts\pip install -r requirements\requirements-dev.txt
+'@
+    exit 1
+}
 
 $databaseUrl = Get-RagEnvValue -Name 'DATABASE_URL'
 if ([string]::IsNullOrWhiteSpace($databaseUrl)) {
@@ -209,6 +230,7 @@ else {
 
 $header | Tee-Object -FilePath $reportFullPath | Out-Host
 Write-Host "DeepEval progress log is being written to $effectiveLogPath"
+$exitCode = 0
 $oldErrorActionPreference = $ErrorActionPreference
 $oldNativeCommandPreference = $null
 $hasNativeCommandPreference = Test-Path -LiteralPath 'Variable:\PSNativeCommandUseErrorActionPreference'
@@ -218,7 +240,7 @@ if ($hasNativeCommandPreference) {
 }
 try {
     $ErrorActionPreference = 'Continue'
-    & uv run python -m rag_evals.cli 2> $logFullPath | Tee-Object -FilePath $reportFullPath -Append
+    & $ragPython -m rag_evals.cli 2> $logFullPath | Tee-Object -FilePath $reportFullPath -Append
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         if ($effectiveReportFileType -eq 'html') {

@@ -1,7 +1,7 @@
 ## ----------------------------------------------------------------------------
 ## rag-pgvector chart values
 ##
-## The chart deploys 3 pods total: postgres-pgvector, vectorizer, question-api.
+## The chart deploys postgres-pgvector, Redis Stack, vectorizer, and question-api.
 ## NO Ollama pod is deployed — Ollama is expected to run on the Docker Desktop
 ## host and is reached at http://host.docker.internal:11434 from question-api.
 ## ----------------------------------------------------------------------------
@@ -82,6 +82,26 @@ postgres:
     limits:
       cpu: 1000m
       memory: 1Gi
+
+## ----------------------------------------------------------------------------
+## Redis Stack pod (LangGraph checkpointer/session state)
+## ----------------------------------------------------------------------------
+redisStack:
+  enabled: true
+  image:
+    repository: redis/redis-stack-server
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 ## ----------------------------------------------------------------------------
 ## vectorizer pod (PDF -> chunks -> embeddings -> pgvector)

@@ -1,0 +1,4 @@
+# Install rag-core first, then question-api (see docker-vectorizer.txt header for rationale).
+# Regenerate fully pinned output with: pip-compile requirements/docker-question-api.in -o requirements/docker-question-api.txt
+-e ./libs/rag-core
+-e ./question-api
