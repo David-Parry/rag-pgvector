@@ -197,6 +197,12 @@ $retrievalTopK = Get-RagEnv -Name 'RETRIEVAL_TOP_K' -Default '5'
 $retrievalScoreThreshold = Get-RagEnv -Name 'RETRIEVAL_SCORE_THRESHOLD' -Default '0.25'
 $redisUrl = Convert-RagRedisUrlForHelm -RedisUrl (Get-RagEnv -Name 'LANGGRAPH_REDIS_URL' -Default (Get-RagEnv -Name 'REDIS_URL'))
 $env:LANGGRAPH_REDIS_URL = $redisUrl
+$novaSonicModelId = Get-RagEnv -Name 'BEDROCK_NOVA_SONIC_MODEL_ID' -Default (Get-RagEnv -Name 'NOVA_SONIC_MODEL' -Default 'amazon.nova-2-sonic-v1:0')
+$novaSonicRoleArn = Get-RagEnv -Name 'SONIC_AWS_ROLE_ARN'
+$novaSonicAccessKeyId = Get-RagEnv -Name 'SONIC_AWS_ACCESS_KEY_ID'
+$novaSonicSecretAccessKey = Get-RagEnv -Name 'SONIC_AWS_SECRET_ACCESS_KEY'
+$novaSonicSessionToken = Get-RagEnv -Name 'SONIC_AWS_SESSION_TOKEN'
+$novaSonicCredentialExpiration = Get-RagEnv -Name 'SONIC_AWS_CREDENTIAL_EXPIRATION'
 
 if (-not (Test-RagKubernetesNamespaceExists -Namespace $NAMESPACE)) {
     kubectl create namespace $NAMESPACE
@@ -221,6 +227,12 @@ $argsList = @(
     '--set-string', "bedrock.embeddingModelId=$(if ($env:EMBEDDING_MODEL) { $env:EMBEDDING_MODEL } elseif ($env:BEDROCK_EMBEDDING_MODEL_ID) { $env:BEDROCK_EMBEDDING_MODEL_ID } else { 'amazon.titan-embed-text-v2:0' })",
     '--set-string', "bedrock.embeddingBearerToken=$bedrockBearerTokenValue",
     '--set', "bedrock.embeddingDimensions=$(if ($env:BEDROCK_EMBEDDING_DIMENSIONS) { $env:BEDROCK_EMBEDDING_DIMENSIONS } else { '1024' })",
+    '--set-string', "novaSonic.modelId=$novaSonicModelId",
+    '--set-string', "novaSonic.roleArn=$novaSonicRoleArn",
+    '--set-string', "novaSonic.accessKeyId=$novaSonicAccessKeyId",
+    '--set-string', "novaSonic.secretAccessKey=$novaSonicSecretAccessKey",
+    '--set-string', "novaSonic.sessionToken=$novaSonicSessionToken",
+    '--set-string', "novaSonic.credentialExpiration=$novaSonicCredentialExpiration",
     '--set-string', "anthropic.apiKey=$(if ($env:ANTHROPIC_API_KEY) { $env:ANTHROPIC_API_KEY } else { '' })",
     '--set-string', "anthropic.model=$(if ($env:ANTHROPIC_DIRECT_MODEL) { $env:ANTHROPIC_DIRECT_MODEL } else { 'claude-sonnet-4-5' })",
     '--set', "anthropic.maxTokens=$(if ($env:ANTHROPIC_MAX_TOKENS) { $env:ANTHROPIC_MAX_TOKENS } else { '1024' })",
@@ -234,6 +246,9 @@ $argsList = @(
     '--set-string', "vectorizer.env.LOG_FORMAT=$(Get-RagEnv -Name 'LOG_FORMAT' -Default 'json')",
     '--set-string', "qa.env.LOG_LEVEL=$(Get-RagEnv -Name 'LOG_LEVEL' -Default 'DEBUG')",
     '--set-string', "qa.env.LOG_FORMAT=$(Get-RagEnv -Name 'LOG_FORMAT' -Default 'json')",
+    '--set-string', "qa.env.VOICE_ENABLED=$(Get-RagEnv -Name 'VOICE_ENABLED' -Default 'true')",
+    '--set-string', "qa.env.NOVA_SONIC_VOICE=$(Get-RagEnv -Name 'NOVA_SONIC_VOICE' -Default 'matthew')",
+    '--set-string', "qa.env.NOVA_SONIC_ENDPOINTING_SENSITIVITY=$(Get-RagEnv -Name 'NOVA_SONIC_ENDPOINTING_SENSITIVITY' -Default 'MEDIUM')",
     '--wait',
     '--timeout', '2m'
 )

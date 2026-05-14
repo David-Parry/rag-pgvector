@@ -99,6 +99,7 @@ GOVINFO_API_KEY_VALUE="DEMO_KEY"
 if has_real_govinfo_api_key; then
   GOVINFO_API_KEY_VALUE="$GOVINFO_API_KEY"
 fi
+NOVA_SONIC_MODEL_ID="${BEDROCK_NOVA_SONIC_MODEL_ID:-${NOVA_SONIC_MODEL:-amazon.nova-2-sonic-v1:0}}"
 
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || \
   kubectl create namespace "$NAMESPACE"
@@ -119,6 +120,12 @@ ARGS=(
   --set-string "bedrock.embeddingModelId=${EMBEDDING_MODEL:-${BEDROCK_EMBEDDING_MODEL_ID:-amazon.titan-embed-text-v2:0}}"
   --set-string "bedrock.embeddingBearerToken=${BEDROCK_BEARER_TOKEN_VALUE}"
   --set "bedrock.embeddingDimensions=${BEDROCK_EMBEDDING_DIMENSIONS:-1024}"
+  --set-string "novaSonic.modelId=${NOVA_SONIC_MODEL_ID}"
+  --set-string "novaSonic.roleArn=${SONIC_AWS_ROLE_ARN:-}"
+  --set-string "novaSonic.accessKeyId=${SONIC_AWS_ACCESS_KEY_ID:-}"
+  --set-string "novaSonic.secretAccessKey=${SONIC_AWS_SECRET_ACCESS_KEY:-}"
+  --set-string "novaSonic.sessionToken=${SONIC_AWS_SESSION_TOKEN:-}"
+  --set-string "novaSonic.credentialExpiration=${SONIC_AWS_CREDENTIAL_EXPIRATION:-}"
   --set-string "anthropic.apiKey=${ANTHROPIC_API_KEY:-}"
   --set-string "anthropic.model=${ANTHROPIC_DIRECT_MODEL:-claude-sonnet-4-5}"
   --set "anthropic.maxTokens=${ANTHROPIC_MAX_TOKENS:-1024}"
@@ -130,6 +137,9 @@ ARGS=(
   --set-string "vectorizer.env.LOG_FORMAT=${LOG_FORMAT:-json}"
   --set-string "qa.env.LOG_LEVEL=${LOG_LEVEL:-DEBUG}"
   --set-string "qa.env.LOG_FORMAT=${LOG_FORMAT:-json}"
+  --set-string "qa.env.VOICE_ENABLED=${VOICE_ENABLED:-true}"
+  --set-string "qa.env.NOVA_SONIC_VOICE=${NOVA_SONIC_VOICE:-matthew}"
+  --set-string "qa.env.NOVA_SONIC_ENDPOINTING_SENSITIVITY=${NOVA_SONIC_ENDPOINTING_SENSITIVITY:-MEDIUM}"
   --wait
   --timeout 5m
 )

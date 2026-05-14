@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `question-api` now exposes finalized Nova Sonic voice transcript events over `GET /voice/transcripts/{sessionId}` as a server-sent event stream, and `chat-bot-ui` renders those finalized voice transcript turns while a voice session is active.
+- `chat-bot-ui` voice controls now show a live microphone input level meter while a WebRTC voice session is opening or connected.
+- `scripts/ps/Check-NovaSonic.ps1` as a PowerShell equivalent of `scripts/check_nova_sonic.sh` for validating Nova Sonic STS identity, credential lifetime, and Bedrock model permission behavior on Windows.
+- `question-api` Pipecat / AWS Bedrock Nova Sonic voice path with Small WebRTC routes (`/voice/start`, `/voice/api/offer` `POST` and `PATCH`), finalized transcript capture, and an `answer_question` tool bridge that delegates to the existing `AskService.ask()` RAG flow.
+- `chat-bot-ui` voice interaction control and Next.js proxy routes for `question-api` Small WebRTC voice sessions, including streamed remote audio playback from Nova Sonic.
+- `chat-bot-ui` browser voice permission prompt for microphone input and speaker output readiness before starting Nova Sonic voice chat.
+- `chat-bot-ui` app-router error, global error, and not-found boundaries so runtime route failures render stable UI instead of triggering the Next development refresh fallback.
+- Helm chart values for Nova Sonic-specific model and STS credential environment variables (`BEDROCK_NOVA_SONIC_MODEL_ID`, `SONIC_AWS_*`) so voice can use a separate Bedrock credential set from embeddings.
+- Helm install helpers (`scripts/helm-install.sh`, `scripts/ps/Helm-Install.ps1`) now forward Nova Sonic model, role, temporary credentials, and voice runtime settings into the chart.
+- `scripts/update-rag-pods.sh` and `scripts/ps/Update-RagPods.ps1` to rebuild images, run Helm upgrade, and rollout-restart existing RAG pods without teardown, namespace deletion, or PVC deletion.
+- [documentation/QUESTION_API_VOICE.md](documentation/QUESTION_API_VOICE.md) documents voice configuration, Helm environment values, and manual Nova Sonic verification steps.
 - `scripts/ps/Inspect-RedisCheckpoints.ps1` to scan Redis checkpoint keys and dump read-only values by Redis data type for local LangGraph checkpoint troubleshooting.
 - `requirements/` directory: `requirements-dev.in` / `requirements-dev.txt` for local development, `docker-vectorizer.in` / `docker-vectorizer.txt` and `docker-question-api.in` / `docker-question-api.txt` for image installs; regenerate fully pinned files with `pip-compile` when needed.
 - [documentation/PYTHON_PIP_WORKFLOW.md](documentation/PYTHON_PIP_WORKFLOW.md) summarizes venv setup, pip-tools, and optional `python -m build`.
@@ -33,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `chat-bot-ui` voice responses now guard JSON parsing so HTML proxy or route errors surface as readable voice API failures instead of `Unexpected token '<'` parse exceptions.
+- Local Helm voice deployment now defaults `VOICE_ENABLED` to `true`, and `/voice/start` also rejects disabled deployments so the UI reports voice availability before WebRTC offer negotiation.
+- `chat-bot-ui` voice WebRTC calls now use browser-side `NEXT_PUBLIC_RAG_QUESTION_API_URL` with a `http://localhost:8000` default, and `question-api` allows local chat UI origins through CORS for direct voice endpoint access.
+- Local question-api forwarding and chat defaults now use `localhost:8000` instead of `localhost:8002` so text and voice clients target the same backend port.
 - Docker requirement files **`requirements/docker-vectorizer.txt`** and **`requirements/docker-question-api.txt`** install **`-e ./libs/rag-core`** before the app package; **`vectorizer`** and **`question-api`** depend on **`rag-core==0.1.0`** instead of **`rag-core @ file:../libs/rag-core`** so pip does not resolve the path dependency to **`/libs/rag-core`** inside the Linux builder.
 - **Python tooling:** Astral **uv** and **`uv_build`** are replaced by **pip** (PyPI), **`setuptools.build_meta`**, and workspace installs from **`requirements/*.txt`**. Docker images no longer copy `ghcr.io/astral-sh/uv`; they create a venv and `pip install -r` the service requirement file. Host and CI workflows use `python -m venv .venv` and `pip install -r requirements/requirements-dev.txt`; optional **`python -m build`** (PyPA `build` package) produces sdists/wheels per package `[build-system]`.
 - `scripts/ps/env_var_artifactory.ps1` populates **`RAG_DOCKER_PIP_INDEX_URL`** (and optional one-line **`RAG_PIP_INDEX_URL_FILE`**) when using **`RAG_DOCKER_PIP_CONFIG_FILE`** / discovered `pip.ini`, with more permissive **`index-url`** parsing (quotes, comments, `%ProgramData%\pip\pip.ini` candidate).
@@ -76,6 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `scripts/ps/Check-NovaSonic.ps1` now maps `SONIC_AWS_*` credentials from `.env` into the AWS CLI environment and clears profile fallback so checks run against the Nova Sonic federated identity, not the developer's default account.
+- `scripts/ps/Check-NovaSonic.ps1` suppresses expected Bedrock probe error details on successful Nova Sonic access checks by default, with `-ShowAwsError` available for raw AWS diagnostics.
+- `scripts/ps/Check-NovaSonic.ps1` now captures AWS CLI probe stderr without PowerShell converting expected Bedrock errors into terminating `NativeCommandError` failures.
 - `scripts/ps/Docker-Desktop-Up.ps1` now exits with a non-zero status when a `docker build` step fails (previously it could still print “Cluster ready” after a failed image build).
 
 - `question-api`: consecutive duplicate-question reuse (and UI `fromRedisSessionCache` flag) did not trigger when prior checkpoint messages were deserialized from Redis as plain dicts; duplicate detection and last-reply parsing now use normalized message roles and ACA `from_redis_session_cache` instead of strict `isinstance(HumanMessage)` / `AIMessage` only. **Also** handles LangChain **JsonPlus `lc` / `constructor`** message blobs (root `type` is `constructor`, not `human` / `ai`).

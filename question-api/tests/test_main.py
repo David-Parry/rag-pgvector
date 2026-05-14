@@ -44,6 +44,9 @@ async def test_lifespan_logs_anthropic_model_without_provider_setting(monkeypatc
     )
     app = create_app(settings)
 
+    assert any(route.path == "/voice/start" for route in app.routes)
+    assert any(middleware.cls.__name__ == "CORSMiddleware" for middleware in app.user_middleware)
+
     async with app.router.lifespan_context(app):
         assert app.state.container is container
 

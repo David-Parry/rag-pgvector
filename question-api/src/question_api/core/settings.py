@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from question_api.core.langgraph_redis_settings import LanggraphRedisSettings
+from question_api.core.voice_settings import VoiceSettings
 from rag_core.settings import (
     AnthropicSettings,
     AwsBedrockSettings,
@@ -22,6 +23,7 @@ class QuestionApiSettings:
     database: DatabaseSettings
     retrieval: RetrievalSettings
     langgraph_redis: LanggraphRedisSettings
+    voice: VoiceSettings = field(default_factory=VoiceSettings)
 
     @classmethod
     def load(cls) -> QuestionApiSettings:
@@ -32,4 +34,5 @@ class QuestionApiSettings:
             database=DatabaseSettings(),
             retrieval=RetrievalSettings(),
             langgraph_redis=LanggraphRedisSettings(),
+            voice=VoiceSettings(),
         )

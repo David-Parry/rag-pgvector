@@ -63,6 +63,36 @@ def test_helm_template_renders() -> None:
     assert "EMBEDDING_MODEL" in rendered
     assert "ANTHROPIC_API_KEY" in rendered
     assert "ANTHROPIC_DIRECT_MODEL" in rendered
+    assert "BEDROCK_NOVA_SONIC_MODEL_ID" in rendered
+
+
+def test_helm_template_supports_nova_sonic_specific_credentials() -> None:
+    result = _run(
+        "template",
+        "rag",
+        str(CHART_PATH),
+        *REQUIRED_VALUES,
+        "--set",
+        "novaSonic.modelId=amazon.nova-sonic-v1:0",
+        "--set",
+        "novaSonic.roleArn=arn:aws:iam::111122223333:role/nova-sonic",
+        "--set",
+        "novaSonic.accessKeyId=ASIA_SONIC",
+        "--set",
+        "novaSonic.secretAccessKey=fake-sonic-secret",
+        "--set",
+        "novaSonic.sessionToken=fake-sonic-session",
+        "--set",
+        "novaSonic.credentialExpiration=2026-05-14T20:00:00+00:00",
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = result.stdout
+    assert "BEDROCK_NOVA_SONIC_MODEL_ID: \"amazon.nova-sonic-v1:0\"" in rendered
+    assert "SONIC_AWS_ROLE_ARN" in rendered
+    assert "SONIC_AWS_ACCESS_KEY_ID" in rendered
+    assert "SONIC_AWS_SECRET_ACCESS_KEY" in rendered
+    assert "SONIC_AWS_SESSION_TOKEN" in rendered
+    assert "SONIC_AWS_CREDENTIAL_EXPIRATION" in rendered
 
 
 def test_helm_template_supports_irsa_mode_without_aws_keys() -> None:

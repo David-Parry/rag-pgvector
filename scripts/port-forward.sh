@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Forward app, database, and Redis Stack services to the laptop:
 #   localhost:8001 -> svc/vectorizer:8000
-#   localhost:8002 -> svc/question-api:8000
+#   localhost:8000 -> svc/question-api:8000
 #   localhost:5432 -> svc/<release>-postgres:5432
 #   localhost:6379 -> svc/<release>-redis-stack:6379
 #
@@ -19,7 +19,7 @@
 # Env overrides:
 #   NAMESPACE         (default: rag)
 #   VECTORIZER_PORT   (default: 8001)
-#   QA_PORT           (default: 8002)
+#   QA_PORT           (default: 8000)
 #   POSTGRES_PORT     (default: 5432)
 #   POSTGRES_SVC      (default: rag-postgres)
 #   REDIS_PORT        (default: 6379)
@@ -29,7 +29,7 @@ set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-rag}"
 VECTORIZER_PORT="${VECTORIZER_PORT:-8001}"
-QA_PORT="${QA_PORT:-8002}"
+QA_PORT="${QA_PORT:-8000}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_SVC="${POSTGRES_SVC:-rag-postgres}"
 REDIS_PORT="${REDIS_PORT:-6379}"

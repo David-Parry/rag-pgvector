@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/_Common.ps1"
 
-$QUESTION_API_URL = if ($env:QUESTION_API_URL) { $env:QUESTION_API_URL.TrimEnd('/') } else { 'http://localhost:8002' }
+$QUESTION_API_URL = if ($env:QUESTION_API_URL) { $env:QUESTION_API_URL.TrimEnd('/') } else { 'http://localhost:8000' }
 
 $DEFAULT_QUESTION = 'What conditions does the Consolidated Appropriations Act place on U.S. assistance to the West Bank and Gaza, and what restrictions apply to the Palestinian Authority?'
 if ($QuestionArg) {

@@ -17,7 +17,7 @@ flowchart LR
     end
 
     User -->|"POST localhost:8001/ingest"| PFv[kubectl port-forward 8001 -> svc/vectorizer:8000]
-    User -->|"POST localhost:8002/ask"| PFq[kubectl port-forward 8002 -> svc/question-api:8000]
+    User -->|"POST localhost:8000/ask"| PFq[kubectl port-forward 8000 -> svc/question-api:8000]
 
     subgraph Cluster["Helm release: rag-pgvector"]
         PFv --> Vec[vectorizer Pod]
@@ -203,7 +203,7 @@ Use the scripts under `scripts\ps\` (or the dispatcher `.\Rag.ps1`). **Order mat
 
 **Restart `question-api` only (after code or image changes):** from `scripts\ps`, run `.\Rag.ps1 restart-question-api` (or `.\Restart-QuestionApi.ps1`). That performs `kubectl rollout restart` on the Deployment labeled `app.kubernetes.io/component=question-api` in namespace `rag` (override with `$env:NAMESPACE`). Rebuild images with `.\Rag.ps1 docker-desktop-up` when you need new application code inside the cluster.
 
-Then use Git Bash or WSL with `scripts/ask.sh`, or native Windows `scripts\ps\Ask.ps1`, or curl against `http://localhost:8001` / `http://localhost:8002` as in the examples below.
+Then use Git Bash or WSL with `scripts/ask.sh`, or native Windows `scripts\ps\Ask.ps1`, or curl against `http://localhost:8001` / `http://localhost:8000` as in the examples below.
 
 ```bash
 # Vectorize a govinfo collection (small sample)
@@ -212,7 +212,7 @@ curl -X POST http://localhost:8001/ingest \
   -d '{"collection":"BILLS","lastModifiedStartDate":"2026-01-01T00:00:00Z","pageSize":25,"maxPackages":5}'
 
 # Ask a grounded question
-curl -X POST http://localhost:8002/ask \
+curl -X POST http://localhost:8000/ask \
   -H 'content-type: application/json' \
   -d '{"question":"What does the latest BILLS package say about appropriations?","metadata":{"collection":"BILLS"},"topK":5}'
 ```
@@ -312,7 +312,7 @@ python -m venv .venv
 
 # Run each service directly on the host
 .venv\Scripts\uvicorn.exe vectorizer.main:app    --reload --port 8001
-.venv\Scripts\uvicorn.exe question_api.main:app  --reload --port 8002
+.venv\Scripts\uvicorn.exe question_api.main:app  --reload --port 8000
 ```
 
 If you are on a network that blocks or MITMs public PyPI, use an internal mirror (for example JFrog) for both host `pip install` and image builds. Image builds: `documentation/DOCKER_PYPI_MIRROR.md`.

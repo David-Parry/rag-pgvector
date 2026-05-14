@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { randomUUID } from "node:crypto";
 
-const DEFAULT_RAG_BASE = "http://127.0.0.1:8002";
+const DEFAULT_RAG_BASE = "http://127.0.0.1:8000";
 
 function normalizeBase(url: string): string {
   return url.replace(/\/+$/, "");

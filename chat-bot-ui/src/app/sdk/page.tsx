@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Bot, SendHorizontal, User } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -58,12 +59,12 @@ export default function ChatSdkDemoPage() {
             wrapping rag-pgvector
           </p>
         </div>
-        <a
+        <Link
           href="/"
           className="text-primary text-xs underline-offset-2 hover:underline"
         >
           ← back to ChatPanel
-        </a>
+        </Link>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4">

@@ -18,6 +18,31 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Backend configuration
+
+Set `RAG_QUESTION_API_URL` to the server-side `question-api` base URL used by
+Next API proxy routes. Set `NEXT_PUBLIC_RAG_QUESTION_API_URL` to the browser-side
+base URL used by WebRTC voice calls; local development defaults to
+`http://localhost:8000`.
+
+Text chat is proxied to `POST /ask`. Voice chat calls the Pipecat Small WebRTC
+endpoints directly from the browser:
+
+- `POST /voice/start`
+- `POST /voice/api/offer`
+- `PATCH /voice/api/offer`
+
+Voice chat uses the active chat session UUID so the backend can keep the same
+LangGraph/Redis thread semantics as text chat. The browser sends microphone
+audio over WebRTC and plays Nova Sonic's streamed audio response from the remote
+track.
+
+Before starting a voice session, use the voice permissions prompt in the chat
+composer to allow microphone capture and confirm browser audio output readiness.
+If a voice proxy route or backend endpoint returns HTML instead of JSON, the UI
+surfaces the HTTP status and response excerpt instead of a generic JSON parse
+error.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

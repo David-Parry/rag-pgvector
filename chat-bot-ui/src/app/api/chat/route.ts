@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEFAULT_RAG_BASE = "http://127.0.0.1:8002";
+const DEFAULT_RAG_BASE = "http://127.0.0.1:8000";
 
 /** RFC 4122 UUID string (case-insensitive). */
 const UUID_STRING_RE =

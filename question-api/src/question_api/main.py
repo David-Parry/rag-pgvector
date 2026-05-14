@@ -7,11 +7,29 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from question_api.api.routes import router
 from question_api.core.composition import build_container
 from question_api.core.settings import QuestionApiSettings
+from question_api.voice.routes import close_voice_sessions
+from question_api.voice.routes import router as voice_router
 from rag_core.logging import configure_logging, get_logger
+
+
+DEFAULT_CORS_ORIGINS = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+)
+
+
+def _cors_origins_from_env() -> list[str]:
+    raw = os.environ.get("CORS_ALLOW_ORIGINS", "")
+    if not raw.strip():
+        return list(DEFAULT_CORS_ORIGINS)
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 def create_app(settings: QuestionApiSettings | None = None) -> FastAPI:
@@ -29,6 +47,7 @@ def create_app(settings: QuestionApiSettings | None = None) -> FastAPI:
             yield
         finally:
             log.info("question_api.shutting_down")
+            await close_voice_sessions()
             await container.aclose()
 
     app = FastAPI(
@@ -40,7 +59,15 @@ def create_app(settings: QuestionApiSettings | None = None) -> FastAPI:
         ),
         lifespan=lifespan,
     )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins_from_env(),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_headers=["*"],
+    )
     app.include_router(router)
+    app.include_router(voice_router)
     return app
 
 

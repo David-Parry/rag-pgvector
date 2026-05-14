@@ -27,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { VoiceChatControl } from "@/components/voice-chat-control";
 import {
   formatRagClientError,
   parseAskSuccessResponse,
@@ -957,12 +958,20 @@ export function ChatPanel() {
               className="min-h-[80px] resize-none border-input/80 shadow-sm focus-visible:border-primary/50 focus-visible:ring-primary/25"
               aria-label="Chat message"
             />
-            <div className="flex justify-end">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              {activeSession ? (
+                <VoiceChatControl
+                  sessionId={activeSession.id}
+                  topK={topK}
+                  scoreThreshold={scoreThreshold}
+                  disabled={pending}
+                />
+              ) : null}
               <Button
                 type="button"
                 onClick={() => void send()}
                 disabled={pending || !input.trim()}
-                className="shadow-md"
+                className="self-end shadow-md"
               >
                 <SendHorizontal className="mr-2 size-4" aria-hidden />
                 Send

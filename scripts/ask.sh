@@ -13,11 +13,11 @@
 #   QUESTION="..." ./scripts/ask.sh
 #   TOP_K=10 SCORE_THRESHOLD=0.30 ./scripts/ask.sh "..."
 #   METADATA='{"packageId":"BILLS-115hr1625enr"}' ./scripts/ask.sh "..."
-#   QUESTION_API_URL=http://localhost:8002 ./scripts/ask.sh "..."
+#   QUESTION_API_URL=http://localhost:8000 ./scripts/ask.sh "..."
 #   SESSION_ID="550e8400-e29b-41d4-a716-446655440000" ./scripts/ask.sh "..."
 #
 # Env vars:
-#   QUESTION_API_URL  Base URL for the question-api pod  (default: http://localhost:8002)
+#   QUESTION_API_URL  Base URL for the question-api pod  (default: http://localhost:8000)
 #   QUESTION          Question text                      (overridden by $1 if given)
 #   SESSION_ID        UUID for LangGraph thread_id       (default: uuidgen or python3)
 #   METADATA          JSON metadata filter for retrieval (default: {})
@@ -27,7 +27,7 @@
 #
 set -euo pipefail
 
-QUESTION_API_URL="${QUESTION_API_URL:-http://localhost:8002}"
+QUESTION_API_URL="${QUESTION_API_URL:-http://localhost:8000}"
 
 # Default demo question: hits SEC. 1004 + Sec. 7038-7040 of the FY2018
 # Consolidated Appropriations Act (BILLS-115hr1625enr), which gives the LLM

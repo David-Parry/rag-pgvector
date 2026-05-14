@@ -1,5 +1,33 @@
 # Restart question-api (Kubernetes)
 
+## Preferred update flow
+
+Use the update scripts when you want to apply code, image, Helm value, or Secret
+changes to existing RAG pods without tearing down the release:
+
+```powershell
+.\scripts\ps\Rag.ps1 update-rag-pods
+```
+
+```bash
+bash scripts/update-rag-pods.sh
+```
+
+The update flow rebuilds local images, runs `helm upgrade --install` against the
+existing release, and rollout-restarts the selected Deployment(s). It does not
+run teardown, uninstall Helm, delete PVCs, or delete the namespace. By default it
+rolls `question-api`, which is the pod affected by the Nova Sonic voice backend
+feature.
+
+Optional environment variables:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `UPDATE_COMPONENTS` | `question-api` | Comma-separated Deployment components to rollout restart, for example `question-api,vectorizer` |
+| `UPDATE_SKIP_BUILD` | unset | Set to `1` to skip Docker image rebuild/import |
+| `UPDATE_SKIP_HELM` | unset | Set to `1` to skip Helm upgrade |
+| `UPDATE_SKIP_ROLLOUT` | unset | Set to `1` to skip rollout restart |
+
 ## When to use
 
 Use this after changing `question-api` Python code **when the app runs as a Helm-deployed pod** (for example Docker Desktop Kubernetes). A rollout restart recreates pods with the same image tag; if you need **new code inside the image**, rebuild first (see below).

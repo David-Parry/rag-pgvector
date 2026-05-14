@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 
 $NAMESPACE = if ($env:NAMESPACE) { $env:NAMESPACE } else { 'rag' }
 $VECTORIZER_PORT = if ($env:VECTORIZER_PORT) { [int]$env:VECTORIZER_PORT } else { 8001 }
-$QA_PORT = if ($env:QA_PORT) { [int]$env:QA_PORT } else { 8002 }
+$QA_PORT = if ($env:QA_PORT) { [int]$env:QA_PORT } else { 8000 }
 $POSTGRES_PORT = if ($env:POSTGRES_PORT) { [int]$env:POSTGRES_PORT } else { 5432 }
 $POSTGRES_SVC = if ($env:POSTGRES_SVC) { $env:POSTGRES_SVC } else { 'rag-postgres' }
 $REDIS_PORT = if ($env:REDIS_PORT) { [int]$env:REDIS_PORT } else { 6379 }

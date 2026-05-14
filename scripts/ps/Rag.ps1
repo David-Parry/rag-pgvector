@@ -5,6 +5,7 @@
 
 .EXAMPLE
   .\Rag.ps1 docker-up
+  .\Rag.ps1 update-rag-pods
   .\Rag.ps1 helm-install
   .\Rag.ps1 port-forward
   .\Rag.ps1 ingest-package BILLS-115hr1625enr
@@ -41,6 +42,7 @@ Usage:
 
 Commands:
   docker-up              Build images and prep Docker Desktop Kubernetes namespace
+  update-rag-pods        Rebuild + Helm upgrade + rollout restart, without teardown
   helm-install           helm upgrade --install (loads repo .env)
   port-forward           kubectl port-forward vectorizer, question-api, postgres
   restart-question-api   kubectl rollout restart for question-api Deployment (K8s)
@@ -86,6 +88,10 @@ if ($RemainingArgs -and $RemainingArgs.Count -gt 0) {
 switch -Regex ($Command.ToLowerInvariant()) {
     '^docker-up$|^docker-desktop-up$' {
         & (Join-Path $here 'Docker-Desktop-Up.ps1') @forwardArgs
+        break
+    }
+    '^update-rag-pods$|^update-pods$|^pods-update$|^upgrade-pods$' {
+        & (Join-Path $here 'Update-RagPods.ps1') @forwardArgs
         break
     }
     '^helm-install$|^helm$' {
