@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Mic, MicOff, Radio, Volume2 } from "lucide-react";
+import { Hourglass, Loader2, Mic, MicOff, Radio, Send, Volume2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { VoiceMediaPermissionPrompt } from "@/components/ui/voice-media-permission-prompt";
@@ -90,12 +90,12 @@ async function readVoiceJson<T>(res: Response, label: string): Promise<T> {
   return body as T;
 }
 
-function statusLabel(status: VoiceStatus): string {
+function statusLabel(status: VoiceStatus, muted: boolean): string {
   switch (status) {
     case "connecting":
       return "Connecting voice stream";
     case "connected":
-      return "Voice stream connected";
+      return muted ? "Generating answer..." : "Voice stream connected";
     case "error":
       return "Voice stream failed";
     case "idle":
@@ -263,6 +263,7 @@ export function VoiceChatControl({
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<VoiceTranscriptEvent[]>([]);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -282,9 +283,19 @@ export function VoiceChatControl({
     pcIdRef.current = null;
     setPcId(null);
     setStatus("idle");
+    setMuted(false);
     if (audioRef.current) {
       audioRef.current.srcObject = null;
     }
+  }, []);
+
+  const setMicEnabled = useCallback((enabled: boolean) => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = enabled;
+    });
+    setMuted(!enabled);
   }, []);
 
   useEffect(() => stopVoice, [stopVoice]);
@@ -298,6 +309,9 @@ export function VoiceChatControl({
       if (!transcript) return;
       setTranscriptError(null);
       setTranscripts((current) => [...current, transcript].slice(-6));
+      if (transcript.role === "assistant") {
+        setMicEnabled(true);
+      }
     });
     events.onerror = () => {
       setTranscriptError("Voice transcript stream disconnected.");
@@ -306,7 +320,7 @@ export function VoiceChatControl({
     return () => {
       events.close();
     };
-  }, [status, voiceSessionId]);
+  }, [status, voiceSessionId, setMicEnabled]);
 
   const patchIceCandidates = useCallback(async (connectionId: string, candidates: RTCIceCandidate[]) => {
     if (candidates.length === 0) return;
@@ -328,6 +342,7 @@ export function VoiceChatControl({
     setError(null);
     setTranscriptError(null);
     setTranscripts([]);
+    setMuted(false);
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -441,6 +456,8 @@ export function VoiceChatControl({
         >
           {connecting ? (
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          ) : connected && muted ? (
+            <Hourglass className="size-3.5 animate-pulse text-primary" aria-hidden />
           ) : connected ? (
             <Radio className="size-3.5 text-primary" aria-hidden />
           ) : status === "error" ? (
@@ -448,26 +465,45 @@ export function VoiceChatControl({
           ) : (
             <Volume2 className="size-3.5" aria-hidden />
           )}
-          <span>{statusLabel(status)}</span>
+          <span>{statusLabel(status, muted)}</span>
           <VoiceActivityMeter active={Boolean(meterStream) && (connecting || connected)} stream={meterStream} />
           {pcId ? <span className="hidden font-mono text-[10px] sm:inline">{pcId}</span> : null}
         </div>
 
-        <Button
-          type="button"
-          variant={connected || connecting ? "secondary" : "outline"}
-          size="sm"
-          onClick={connected || connecting ? stopVoice : () => void startVoice()}
-          disabled={(disabled || !mediaPermissionsReady) && !connected && !connecting}
-          aria-pressed={connected}
-        >
-          {connected || connecting ? (
-            <MicOff className="mr-2 size-4" aria-hidden />
-          ) : (
-            <Mic className="mr-2 size-4" aria-hidden />
-          )}
-          {connected || connecting ? "Stop voice" : "Voice"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {connected ? (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={() => setMicEnabled(muted)}
+              aria-pressed={muted}
+              aria-label={muted ? "Resume listening" : "Stop talking and send to RAG"}
+            >
+              {muted ? (
+                <Mic className="mr-2 size-4" aria-hidden />
+              ) : (
+                <Send className="mr-2 size-4" aria-hidden />
+              )}
+              {muted ? "Resume" : "Stop & Send"}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant={connected || connecting ? "secondary" : "outline"}
+            size="sm"
+            onClick={connected || connecting ? stopVoice : () => void startVoice()}
+            disabled={(disabled || !mediaPermissionsReady) && !connected && !connecting}
+            aria-pressed={connected}
+          >
+            {connected || connecting ? (
+              <MicOff className="mr-2 size-4" aria-hidden />
+            ) : (
+              <Mic className="mr-2 size-4" aria-hidden />
+            )}
+            {connected || connecting ? "Stop voice" : "Voice"}
+          </Button>
+        </div>
       </div>
       {!connected && !connecting ? (
         <VoiceMediaPermissionPrompt

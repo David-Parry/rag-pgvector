@@ -3,11 +3,45 @@
 from __future__ import annotations
 
 import logging
+import re
 import sys
+import time
 from typing import Any
 
 import structlog
 from structlog.types import Processor
+
+_WEBRTC_NOISE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"RtpPacket\(seq="),
+    re.compile(r"Rtcp(?:Rr|Sr|Sdes|Bye)Packet"),
+    re.compile(r"^Connection\(\d+\) (?:protocol|Check)"),
+)
+
+
+class _WebRTCNoiseRateLimitFilter(logging.Filter):
+    """Allow at most one matching aiortc/aioice packet log per ``period`` seconds.
+
+    Per-RTP-packet logs from aiortc / aioice are extremely chatty (multiple
+    lines per audio frame). This filter samples one line per pattern every
+    ``period`` seconds so the stream stays alive as a heartbeat without
+    drowning out application logs.
+    """
+
+    def __init__(self, period: float = 120.0) -> None:
+        super().__init__()
+        self._period = period
+        self._last_emit: dict[int, float] = {}
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        for index, pattern in enumerate(_WEBRTC_NOISE_PATTERNS):
+            if pattern.search(message):
+                now = time.monotonic()
+                if now - self._last_emit.get(index, 0.0) >= self._period:
+                    self._last_emit[index] = now
+                    return True
+                return False
+        return True
 
 
 def configure_logging(*, level: str = "INFO", fmt: str = "json") -> None:
@@ -19,6 +53,11 @@ def configure_logging(*, level: str = "INFO", fmt: str = "json") -> None:
         stream=sys.stdout,
         level=log_level,
     )
+
+    noise_filter = _WebRTCNoiseRateLimitFilter(period=120.0)
+    for handler in logging.root.handlers:
+        if not any(isinstance(f, _WebRTCNoiseRateLimitFilter) for f in handler.filters):
+            handler.addFilter(noise_filter)
 
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,

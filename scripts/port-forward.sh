@@ -25,6 +25,8 @@
 #   REDIS_PORT        (default: 6379)
 #   REDIS_SVC         (default: rag-redis-stack)
 #   KILL_STALE=1      auto-reap stale kubectl port-forwards from prior runs
+#   QA_LOCAL=1        question-api runs locally (PyCharm/IDE); skip its
+#                     port-forward + the 8000 pre-flight check
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-rag}"
@@ -35,6 +37,14 @@ POSTGRES_SVC="${POSTGRES_SVC:-rag-postgres}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_SVC="${REDIS_SVC:-rag-redis-stack}"
 KILL_STALE="${KILL_STALE:-0}"
+QA_LOCAL="${QA_LOCAL:-0}"
+
+is_qa_local() {
+  case "${QA_LOCAL}" in
+    1|true|TRUE|True|yes|YES|Yes|on|ON|On) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 if ! command -v kubectl >/dev/null 2>&1; then
   echo "ERROR: kubectl is not installed." >&2
@@ -101,8 +111,13 @@ port_holder() {
     || true
 }
 
+SPECS=("vectorizer ${VECTORIZER_PORT}" "${POSTGRES_SVC} ${POSTGRES_PORT}" "${REDIS_SVC} ${REDIS_PORT}")
+if ! is_qa_local; then
+  SPECS+=("question-api ${QA_PORT}")
+fi
+
 BLOCKED=0
-for spec in "vectorizer ${VECTORIZER_PORT}" "question-api ${QA_PORT}" "${POSTGRES_SVC} ${POSTGRES_PORT}" "${REDIS_SVC} ${REDIS_PORT}"; do
+for spec in "${SPECS[@]}"; do
   read -r label port <<<"${spec}"
   holder="$(port_holder "${port}")"
   if [[ -n "${holder}" ]]; then
@@ -124,15 +139,21 @@ fi
 # --- launch -------------------------------------------------------------------
 echo "Forwarding (namespace=${NAMESPACE}):"
 echo "  http://localhost:${VECTORIZER_PORT}     -> svc/vectorizer:8000"
-echo "  http://localhost:${QA_PORT}             -> svc/question-api:8000"
+if is_qa_local; then
+  echo "  (skipping svc/question-api — QA_LOCAL=1, expecting local IDE process on :${QA_PORT})"
+else
+  echo "  http://localhost:${QA_PORT}             -> svc/question-api:8000"
+fi
 echo "  postgresql://localhost:${POSTGRES_PORT} -> svc/${POSTGRES_SVC}:5432"
 echo "  redis://localhost:${REDIS_PORT}         -> svc/${REDIS_SVC}:6379"
 echo
 
 kubectl -n "${NAMESPACE}" port-forward "svc/vectorizer"      "${VECTORIZER_PORT}:8000" &
 PF_PIDS+=("$!")
-kubectl -n "${NAMESPACE}" port-forward "svc/question-api"    "${QA_PORT}:8000" &
-PF_PIDS+=("$!")
+if ! is_qa_local; then
+  kubectl -n "${NAMESPACE}" port-forward "svc/question-api"  "${QA_PORT}:8000" &
+  PF_PIDS+=("$!")
+fi
 kubectl -n "${NAMESPACE}" port-forward "svc/${POSTGRES_SVC}" "${POSTGRES_PORT}:5432" &
 PF_PIDS+=("$!")
 kubectl -n "${NAMESPACE}" port-forward "svc/${REDIS_SVC}"    "${REDIS_PORT}:6379" &

@@ -92,3 +92,12 @@ if [ "${PIP_STATUS}" -ne 0 ]; then
   fi
   exit "${PIP_STATUS}"
 fi
+
+# pipecat[webrtc] depends on opencv-python, whose wheel links libxcb/libGL — GUI libs
+# absent from slim runtime images. Server-side voice bot never renders, so swap to
+# opencv-python-headless. Skipped automatically when opencv-python isn't installed
+# (e.g. vectorizer image).
+if python -m pip show opencv-python >/dev/null 2>&1; then
+  python -m pip uninstall -y opencv-python
+  python -m pip install --no-deps opencv-python-headless
+fi

@@ -7,8 +7,17 @@ RELEASE="${RELEASE:-rag}"
 NAMESPACE="${NAMESPACE:-rag}"
 TAG="${TAG:-0.1.0}"
 VALUES_FILE="${VALUES_FILE:-}"
+QA_LOCAL="${QA_LOCAL:-0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+
+while (( $# > 0 )); do
+  case "$1" in
+    --qa-local) QA_LOCAL=1; shift ;;
+    --values|-f) VALUES_FILE="$2"; shift 2 ;;
+    *) echo "ERROR: unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
 
 if [[ -f .env ]]; then
   set -o allexport
@@ -143,6 +152,11 @@ ARGS=(
   --wait
   --timeout 5m
 )
+
+if is_truthy "${QA_LOCAL}"; then
+  echo "QA_LOCAL=1 — skipping question-api deployment (run it in PyCharm/IDE against port-forwarded postgres+redis)."
+  ARGS+=(--set "qa.enabled=false")
+fi
 
 if [[ -n "$VALUES_FILE" ]]; then
   ARGS+=(-f "$VALUES_FILE")

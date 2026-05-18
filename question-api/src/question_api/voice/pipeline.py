@@ -55,6 +55,7 @@ async def run_voice_bot(
     """Run one Pipecat voice bot connected to an accepted Small WebRTC session."""
 
     from pipecat.adapters.schemas.tools_schema import ToolsSchema
+    from pipecat.frames.frames import LLMRunFrame
     from pipecat.pipeline.pipeline import Pipeline
     from pipecat.pipeline.runner import PipelineRunner
     from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -120,6 +121,15 @@ async def run_voice_bot(
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
         conversation_id=str(session_id),
     )
+
+    @transport.event_handler("on_client_connected")
+    async def on_client_connected(_transport: Any, _connection: Any) -> None:
+        # Nova Sonic only finishes its bidirectional-stream setup (sending
+        # promptStart, system instruction, and audioInputContent start) after
+        # receiving an LLMContextFrame. Without this kick, the service stays in
+        # pre-setup state and silently drops every incoming audio frame in
+        # _send_user_audio_event because _audio_input_started is False.
+        await task.queue_frame(LLMRunFrame())
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(_transport: Any, _connection: Any) -> None:
