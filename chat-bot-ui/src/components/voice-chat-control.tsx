@@ -270,9 +270,18 @@ export function VoiceChatControl({
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([]);
   const pcIdRef = useRef<string | null>(null);
   const stoppedRef = useRef(false);
+  const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearResponseTimeout = useCallback(() => {
+    if (responseTimeoutRef.current !== null) {
+      clearTimeout(responseTimeoutRef.current);
+      responseTimeoutRef.current = null;
+    }
+  }, []);
 
   const stopVoice = useCallback(() => {
     stoppedRef.current = true;
+    clearResponseTimeout();
     peerRef.current?.close();
     peerRef.current = null;
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -287,16 +296,22 @@ export function VoiceChatControl({
     if (audioRef.current) {
       audioRef.current.srcObject = null;
     }
-  }, []);
+  }, [clearResponseTimeout]);
 
-  const setMicEnabled = useCallback((enabled: boolean) => {
-    const stream = localStreamRef.current;
-    if (!stream) return;
-    stream.getAudioTracks().forEach((track) => {
-      track.enabled = enabled;
-    });
-    setMuted(!enabled);
-  }, []);
+  const setMicEnabled = useCallback(
+    (enabled: boolean) => {
+      const stream = localStreamRef.current;
+      if (!stream) return;
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = enabled;
+      });
+      setMuted(!enabled);
+      if (enabled) {
+        clearResponseTimeout();
+      }
+    },
+    [clearResponseTimeout]
+  );
 
   useEffect(() => stopVoice, [stopVoice]);
 
@@ -387,7 +402,17 @@ export function VoiceChatControl({
           setStatus("connected");
         }
         if (["failed", "disconnected", "closed"].includes(peer.connectionState)) {
-          setStatus(peer.connectionState === "closed" ? "idle" : "error");
+          clearResponseTimeout();
+          setMuted(false);
+          if (peer.connectionState === "closed") {
+            setStatus("idle");
+          } else {
+            setStatus("error");
+            setError(
+              (current) =>
+                current ?? `Voice connection ${peer.connectionState} before a response was received.`
+            );
+          }
         }
       };
 
@@ -442,6 +467,31 @@ export function VoiceChatControl({
   const connected = status === "connected";
   const connecting = status === "connecting";
 
+  const handleStopAndSend = useCallback(() => {
+    if (muted) {
+      setMicEnabled(true);
+      return;
+    }
+    const peer = peerRef.current;
+    if (!peer || peer.connectionState !== "connected") {
+      setError(
+        peer
+          ? `Cannot send: WebRTC peer is ${peer.connectionState}.`
+          : "Cannot send: no active voice connection."
+      );
+      return;
+    }
+    setError(null);
+    setMicEnabled(false);
+    clearResponseTimeout();
+    responseTimeoutRef.current = setTimeout(() => {
+      responseTimeoutRef.current = null;
+      if (stoppedRef.current) return;
+      setMicEnabled(true);
+      setError("No response from the voice model within 3 minutes. Try speaking again.");
+    }, 180000);
+  }, [clearResponseTimeout, muted, setMicEnabled]);
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -476,7 +526,7 @@ export function VoiceChatControl({
               type="button"
               variant="default"
               size="sm"
-              onClick={() => setMicEnabled(muted)}
+              onClick={handleStopAndSend}
               aria-pressed={muted}
               aria-label={muted ? "Resume listening" : "Stop talking and send to RAG"}
             >

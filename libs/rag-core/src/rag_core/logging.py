@@ -59,6 +59,14 @@ def configure_logging(*, level: str = "INFO", fmt: str = "json") -> None:
         if not any(isinstance(f, _WebRTCNoiseRateLimitFilter) for f in handler.filters):
             handler.addFilter(noise_filter)
 
+    # AWS Bedrock bidirectional streaming (used by Nova Sonic) emits one DEBUG
+    # log per audio chunk via the smithy SDKs. Pin those namespaces to INFO so
+    # the per-chunk "Publishing serialized event", "Preparing to publish",
+    # "Received raw event", "Sending request", etc. lines stay out of the log,
+    # even when our own app log level is DEBUG.
+    for noisy in ("smithy_aws_event_stream", "smithy_core.aio.client"):
+        logging.getLogger(noisy).setLevel(logging.INFO)
+
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
